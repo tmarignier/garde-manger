@@ -14,6 +14,7 @@ Application web familiale de gestion des stocks d'épicerie. Avant de coder, lir
 |---|---|
 | `npm install` | Installer les dépendances de développement |
 | `npm run dev` | Compiler l'interface en continu et lancer le serveur avec rechargement automatique (`node --watch`) |
+| `npm run build` | Compiler l'interface vers `public/js/` |
 | `npm start` | Compiler l'interface puis lancer le serveur |
 | `npm test` | Lancer les tests (`node --test`) |
 | `npm run typecheck` | Vérifier les types du serveur et de l'interface (`tsc --noEmit`) |
