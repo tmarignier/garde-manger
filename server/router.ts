@@ -1,17 +1,28 @@
 import type { DatabaseSync } from 'node:sqlite';
+import type { User } from '../shared/types.ts';
 import { HttpError } from './http.ts';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+
+// Who may call a route: anyone, any logged-in user (the default), or an admin.
+export type RouteAccess = 'public' | 'user' | 'admin';
 
 export type RouteContext = {
   db: DatabaseSync;
   params: Record<string, string>;
   body: unknown;
+  // The logged-in user, always set for 'user' and 'admin' routes.
+  user: User | null;
+  sessionToken: string | null;
+  // Whether the request reached the app over HTTPS, to mark cookies Secure.
+  secure: boolean;
 };
 
 export type RouteResult = {
   status: number;
+  // Undefined for a 204 response.
   body: unknown;
+  headers?: Record<string, string>;
 };
 
 export type RouteHandler = (context: RouteContext) => RouteResult | Promise<RouteResult>;
@@ -19,16 +30,33 @@ export type RouteHandler = (context: RouteContext) => RouteResult | Promise<Rout
 export type Route = {
   method: HttpMethod;
   path: string;
+  access?: RouteAccess;
   handler: RouteHandler;
 };
 
 export type RouteMatch =
-  | { kind: 'found'; handler: RouteHandler; params: Record<string, string> }
+  | { kind: 'found'; route: Route; params: Record<string, string> }
   | { kind: 'method-not-allowed'; allowed: HttpMethod[] }
   | { kind: 'not-found' };
 
-export function ok(body: unknown): RouteResult {
-  return { status: 200, body };
+export function ok(body: unknown, headers?: Record<string, string>): RouteResult {
+  return headers === undefined ? { status: 200, body } : { status: 200, body, headers };
+}
+
+export function created(body: unknown): RouteResult {
+  return { status: 201, body };
+}
+
+export function noContent(): RouteResult {
+  return { status: 204, body: undefined };
+}
+
+// Returns the logged-in user of a 'user' or 'admin' route.
+export function currentUser(context: RouteContext): User {
+  if (context.user === null) {
+    throw new HttpError(401, 'Authentication required');
+  }
+  return context.user;
 }
 
 // Matches a path such as '/api/products/42' against a pattern such as
@@ -63,7 +91,7 @@ export function findRoute(routes: readonly Route[], method: string, path: string
       continue;
     }
     if (route.method === method) {
-      return { kind: 'found', handler: route.handler, params };
+      return { kind: 'found', route, params };
     }
     allowed.push(route.method);
   }

@@ -64,6 +64,13 @@ export function sendError(
   sendJson(res, status, body, headers);
 }
 
+// True when the request carries a non-empty body.
 export function hasBody(req: IncomingMessage): boolean {
-  return req.headers['content-length'] !== undefined || req.headers['transfer-encoding'] !== undefined;
+  const length = req.headers['content-length'];
+  return (length !== undefined && length !== '0') || req.headers['transfer-encoding'] !== undefined;
+}
+
+export function isJsonRequest(req: IncomingMessage): boolean {
+  const mediaType = (req.headers['content-type'] ?? '').split(';')[0]?.trim().toLowerCase();
+  return mediaType === 'application/json';
 }
