@@ -1,7 +1,8 @@
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { DatabaseSync } from 'node:sqlite';
-import { HttpError, hasBody, readJson, sendError, sendJson } from './http.ts';
+import { findSession, readSessionToken, sessionCookie } from './auth.ts';
+import { HttpError, hasBody, isJsonRequest, readJson, sendError, sendJson } from './http.ts';
 import { findRoute } from './router.ts';
 import type { Route } from './router.ts';
 import { routes as defaultRoutes } from './routes.ts';
@@ -64,9 +65,44 @@ async function handleApiRequest(
       return;
     }
 
+    const { route, params } = match;
+    const secure = req.headers['x-forwarded-proto'] === 'https';
+    const sessionToken = readSessionToken(req.headers.cookie);
+    const session = sessionToken === null ? null : findSession(options.db, sessionToken);
+    const access = route.access ?? 'user';
+    if (access !== 'public' && session === null) {
+      throw new HttpError(401, 'Authentication required');
+    }
+    if (access === 'admin' && session?.user.isAdmin !== true) {
+      throw new HttpError(403, 'Admin access required');
+    }
+
+    // Requiring JSON on requests with a body means a form on another site
+    // cannot post to the API with the family's cookies.
+    if (hasBody(req) && !isJsonRequest(req)) {
+      throw new HttpError(415, 'Content-Type must be application/json');
+    }
     const body = hasBody(req) ? await readJson(req) : undefined;
-    const result = await match.handler({ db: options.db, params: match.params, body });
-    sendJson(res, result.status, result.body);
+    const result = await route.handler({
+      db: options.db,
+      params,
+      body,
+      user: session?.user ?? null,
+      sessionToken: session === null ? null : sessionToken,
+      secure,
+    });
+
+    const headers: Record<string, string> = {};
+    if (session?.renewed === true && sessionToken !== null) {
+      headers['Set-Cookie'] = sessionCookie(sessionToken, secure);
+    }
+    Object.assign(headers, result.headers);
+    if (result.status === 204) {
+      res.writeHead(204, { 'Cache-Control': 'no-store', ...headers });
+      res.end();
+      return;
+    }
+    sendJson(res, result.status, result.body, headers);
   } catch (error) {
     if (error instanceof HttpError) {
       sendError(res, error.status, error.message);

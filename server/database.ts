@@ -49,6 +49,14 @@ export const migrations: readonly string[] = [
     checked INTEGER NOT NULL DEFAULT 0 CHECK (checked IN (0, 1))
   ) STRICT;
   `,
+  // COLLATE NOCASE only ignores the case of ASCII letters ('Élise' and 'élise'
+  // would be two accounts). name_key holds the name lowercased by the
+  // application, which handles accents.
+  `
+  ALTER TABLE users ADD COLUMN name_key TEXT NOT NULL DEFAULT '';
+  UPDATE users SET name_key = lower(name);
+  CREATE UNIQUE INDEX users_name_key ON users (name_key);
+  `,
 ];
 
 export function getSchemaVersion(db: DatabaseSync): number {

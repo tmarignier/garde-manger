@@ -82,8 +82,14 @@ Une gestion d'utilisateurs basique : chaque membre de la famille a son propre co
 - **Membre** : il utilise l'application et peut changer son propre mot de passe.
 - Tous les comptes voient et modifient le même stock.
 - Chaque produit garde **qui l'a modifié en dernier** et quand, pour savoir qui a pris le dernier paquet.
-- Les mots de passe sont stockés hachés avec `scrypt` (module intégré `node:crypto`), jamais en clair.
-- Une fois connecté, l'appareil garde une session (cookie `HttpOnly`) pour ne pas redemander le mot de passe à chaque fois. Les sessions sont stockées en base et peuvent être révoquées.
+- Les noms sont comparés sans tenir compte des majuscules, lettres accentuées comprises : « Léa » et « LÉA » sont le même compte.
+- Les mots de passe font au moins 8 caractères. Ils sont stockés hachés avec `scrypt` (module intégré `node:crypto`, sel aléatoire, paramètres enregistrés avec chaque empreinte pour pouvoir les renforcer plus tard), jamais en clair.
+- Une fois connecté, l'appareil garde une session (cookie `HttpOnly`, `SameSite=Strict`) pour ne pas redemander le mot de passe à chaque fois. La session dure 90 jours et se prolonge toute seule quand l'appareil s'en sert : un téléphone utilisé chaque semaine reste connecté.
+- Les sessions sont stockées en base et peuvent être révoquées. La base ne contient qu'une empreinte (SHA-256) de chaque jeton : la lire ne permet pas d'ouvrir une session.
+- Changer son mot de passe déconnecte ses autres appareils. Une réinitialisation par l'administrateur, ou la suppression du compte, déconnecte tous les appareils du compte.
+- L'administrateur ne peut pas supprimer son propre compte : il reste toujours au moins un administrateur.
+- Les requêtes de l'API qui envoient des données doivent les déclarer en JSON (`Content-Type: application/json`), sinon elles sont refusées (415). Avec `SameSite=Strict`, cela empêche un autre site d'agir sur l'application avec la session d'un membre de la famille.
+- À la maison, l'application est servie en HTTP simple : le cookie ne peut pas être marqué `Secure`. Il l'est automatiquement quand un proxy HTTPS place devant l'application l'en-tête `X-Forwarded-Proto: https`.
 - Pas de récupération de mot de passe par e-mail : l'administrateur le réinitialise.
 
 ## Utilisation à plusieurs
@@ -97,7 +103,7 @@ Les noms des tables et colonnes sont en anglais, en `snake_case`.
 
 ```
 users                     comptes de la famille
-  id, name, password_hash, is_admin (booléen), created_at
+  id, name, name_key (nom en minuscules, unique), password_hash, is_admin (booléen), created_at
 
 sessions                  sessions de connexion
   id (jeton aléatoire), user_id, expires_at
@@ -127,9 +133,10 @@ Les tables sont déclarées `STRICT` (SQLite vérifie le type de chaque valeur) 
 | Méthode | Chemin | Rôle |
 |---|---|---|
 | `GET` | `/api/health` | Vérifier que le serveur répond (sans connexion) |
-| `POST` | `/api/setup` | Créer le premier compte administrateur (uniquement si aucun compte n'existe) |
-| `POST` | `/api/login` | Se connecter avec son nom et son mot de passe |
-| `POST` | `/api/logout` | Se déconnecter |
+| `GET` | `/api/session` | Savoir qui est connecté sur l'appareil et si le premier compte reste à créer (sans connexion) |
+| `POST` | `/api/setup` | Créer le premier compte administrateur, uniquement si aucun compte n'existe (sans connexion) |
+| `POST` | `/api/login` | Se connecter avec son nom et son mot de passe (sans connexion) |
+| `POST` | `/api/logout` | Se déconnecter (sans connexion, pour qu'un appareil à la session expirée puisse effacer son cookie) |
 | `PUT` | `/api/me/password` | Changer son mot de passe |
 | `GET` / `POST` | `/api/users` | Lister ou créer des comptes (administrateur) |
 | `PUT` / `DELETE` | `/api/users/:id` | Réinitialiser le mot de passe ou supprimer un compte (administrateur) |
@@ -143,6 +150,10 @@ Les tables sont déclarées `STRICT` (SQLite vérifie le type de chaque valeur) 
 | `POST` / `DELETE` | `/api/extra-items` | Ajouter ou retirer un article ponctuel |
 | `GET` / `POST` | `/api/categories` | Lister ou ajouter des catégories |
 
+Toutes les routes exigent une session valide, sauf celles marquées « sans connexion » : sinon le serveur répond 401. Les routes des comptes (`/api/users`) sont réservées aux administrateurs (403 pour les autres). Chaque route déclare son niveau d'accès (`access` dans `server/router.ts` : `public`, `user` par défaut, ou `admin`), et le serveur le vérifie avant d'appeler la route.
+
+Les messages d'erreur de l'API sont en anglais ; l'interface affiche ses propres messages en français selon le code de réponse.
+
 ## Organisation du code
 
 ```
@@ -155,13 +166,17 @@ server/                 exécuté directement par Node.js
   static.ts             service des fichiers de public/
   database.ts           accès à SQLite, création des tables et migrations
   shopping-list.ts      calcul de la liste de courses (logique métier)
-  auth.ts               comptes, mots de passe et sessions
+  auth.ts               mots de passe, sessions et cookie de session
+  users.ts              lecture et écriture des comptes en base
+  account-routes.ts     routes de l'API pour la connexion et les comptes
 client/                 compilé par tsc vers public/js/client/
   app.ts                point d'entrée de l'interface
   api.ts                appels à l'API
-  views/                écrans (stock, produit, courses, comptes)
+  dom.ts                petites fonctions pour construire l'interface
+  views/                écrans (installation, connexion, compte, comptes, stock, courses)
 shared/
   types.ts              types partagés entre serveur et interface
+  accounts.ts           règles des comptes (longueur du nom et du mot de passe), communes aux deux
 public/                 servi tel quel par le serveur
   index.html
   style.css

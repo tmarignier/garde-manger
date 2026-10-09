@@ -13,6 +13,8 @@ npm run dev
 
 L'application est alors disponible sur <http://localhost:3000>. Les données sont enregistrées dans `data/garde-manger.db`.
 
+Au premier lancement, l'application demande de créer le premier compte, qui devient administrateur. Il crée ensuite les comptes des autres membres de la famille depuis l'écran « Comptes ».
+
 ## Documentation
 
 - [Vision](docs/vision.md) : pourquoi ce projet, pour qui, et ce qu'il n'est pas.

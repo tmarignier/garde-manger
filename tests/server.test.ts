@@ -16,10 +16,11 @@ describe('server', () => {
   const publicDir = mkdtempSync(join(tmpdir(), 'garde-manger-public-'));
   const testRoutes: Route[] = [
     ...routes,
-    { method: 'POST', path: '/api/echo', handler: ({ body }) => ok({ received: body }) },
+    { method: 'POST', path: '/api/echo', access: 'public', handler: ({ body }) => ok({ received: body }) },
     {
       method: 'GET',
       path: '/api/fail/:kind',
+      access: 'public',
       handler: ({ params }) => {
         if (params['kind'] === 'http') {
           throw new HttpError(409, 'Conflict');
@@ -80,9 +81,27 @@ describe('server', () => {
   });
 
   it('returns a 400 for an invalid JSON body', async () => {
-    const response = await fetch(`${baseUrl}/api/echo`, { method: 'POST', body: '{oops' });
+    const response = await fetch(`${baseUrl}/api/echo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{oops',
+    });
     assert.equal(response.status, 400);
     assert.deepEqual(await response.json(), { error: 'Invalid JSON body' });
+  });
+
+  it('refuses a body that is not declared as JSON', async () => {
+    for (const contentType of [undefined, 'text/plain', 'application/x-www-form-urlencoded']) {
+      const headers: Record<string, string> = contentType === undefined ? {} : { 'Content-Type': contentType };
+      const response = await fetch(`${baseUrl}/api/echo`, { method: 'POST', headers, body: '{"delta":-1}' });
+      assert.equal(response.status, 415, contentType);
+    }
+  });
+
+  it('accepts a POST without a body', async () => {
+    const response = await fetch(`${baseUrl}/api/echo`, { method: 'POST' });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {});
   });
 
   it('sends the status and message of an HttpError', async () => {
