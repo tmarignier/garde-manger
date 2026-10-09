@@ -10,7 +10,7 @@ Objectif : un serveur qui démarre, une base créée, une page servie.
 - Serveur `node:http` : routage minimal, lecture du JSON reçu, réponses JSON, erreurs, service des fichiers de `public/`.
 - Base SQLite : ouverture du fichier, création des tables du [modèle de données](architecture.md#modèle-de-données), mécanisme simple de migrations (numéro de version du schéma).
 - Route `GET /api/health` qui répond `{ "ok": true }`.
-- Page `index.html` minimale qui charge `public/js/app.js` compilé.
+- Page `index.html` minimale qui charge `public/js/client/app.js` compilé.
 - Premiers tests et vérification des types qui passent.
 
 Terminé quand : `npm run dev` lance l'application, la page s'affiche dans le navigateur, et `npm test` et `npm run typecheck` passent.

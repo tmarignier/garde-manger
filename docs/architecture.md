@@ -116,6 +116,12 @@ extra_items               articles ponctuels ajoutés à la main à la liste de 
 
 La liste de courses n'est **pas stockée** : elle est calculée à partir des produits dont `quantity < min_quantity`, à laquelle s'ajoutent les articles ponctuels. Quantité à acheter = `target_quantity − quantity` si une cible existe, sinon `min_quantity − quantity`.
 
+### Migrations
+
+Le schéma est créé et mis à jour au démarrage par `server/database.ts`. Chaque migration est un script SQL qui fait passer le schéma de la version N à N + 1 ; la version courante est enregistrée dans la base (`PRAGMA user_version`). Chaque migration s'exécute dans une transaction : en cas d'erreur, la base reste dans sa version précédente. Une migration déjà publiée n'est jamais modifiée : on en ajoute une nouvelle à la suite.
+
+Les tables sont déclarées `STRICT` (SQLite vérifie le type de chaque valeur) et les clés étrangères sont activées (`PRAGMA foreign_keys = ON`). Les dates sont stockées en texte au format ISO 8601 (UTC), les booléens en entiers `0` ou `1`.
+
 ## API
 
 | Méthode | Chemin | Rôle |
@@ -141,12 +147,16 @@ La liste de courses n'est **pas stockée** : elle est calculée à partir des pr
 
 ```
 server/                 exécuté directement par Node.js
-  index.ts              démarrage du serveur HTTP
-  router.ts             routage des requêtes de l'API
+  index.ts              démarrage : configuration, base de données, écoute HTTP
+  server.ts             serveur HTTP : API, fichiers statiques et gestion des erreurs
+  router.ts             routage des requêtes de l'API (chemins avec paramètres `:id`)
+  routes.ts             liste des routes de l'API
+  http.ts               lecture du JSON reçu, réponses JSON, erreurs HTTP
+  static.ts             service des fichiers de public/
   database.ts           accès à SQLite, création des tables et migrations
   shopping-list.ts      calcul de la liste de courses (logique métier)
   auth.ts               comptes, mots de passe et sessions
-client/                 compilé par tsc vers public/js/
+client/                 compilé par tsc vers public/js/client/
   app.ts                point d'entrée de l'interface
   api.ts                appels à l'API
   views/                écrans (stock, produit, courses, comptes)
@@ -158,12 +168,16 @@ public/                 servi tel quel par le serveur
   manifest.json
   icon.png
   js/                   généré par la compilation, non versionné
+scripts/
+  dev.ts                mode développement (compilation et serveur en continu)
 tests/
   *.test.ts
 tsconfig.json           configuration du serveur, des tests et du code partagé
 tsconfig.client.json    configuration de l'interface (sortie vers public/js/)
 package.json
 ```
+
+La compilation de l'interface conserve l'arborescence : `client/app.ts` devient `public/js/client/app.js` et `shared/types.ts` devient `public/js/shared/types.js`. Les extensions `.ts` des imports sont réécrites en `.js` (option `rewriteRelativeImportExtensions`).
 
 La logique métier (calcul de la liste de courses, variations de quantité) est isolée pour être testée sans lancer le serveur.
 
