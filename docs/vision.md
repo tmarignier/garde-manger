@@ -6,17 +6,18 @@ Au moment de faire les courses, on ne sait jamais vraiment ce qu'il reste dans l
 
 ## La réponse
 
-Garde-manger est une application iPhone qui tient à jour l'inventaire de l'épicerie de la maison et en déduit la liste de courses. L'objectif est de faire les courses sereinement, sans avoir à vérifier les placards avant de partir.
+Garde-manger est une application web qui tient à jour l'inventaire de l'épicerie de la maison et en déduit la liste de courses. L'objectif est de faire les courses sereinement, sans avoir à vérifier les placards avant de partir.
 
 ## Pour qui
 
-Pour notre famille uniquement. L'application n'a pas vocation à être publiée sur l'App Store ni utilisée par d'autres foyers.
+Pour notre famille uniquement. Tous les membres de la famille partagent le même stock et peuvent le modifier, depuis un iPhone ou un ordinateur. L'application n'a pas vocation à être utilisée par d'autres foyers.
 
 ## Principes
 
 - **Simple avant tout** : ajouter un produit ou mettre à jour une quantité doit prendre quelques secondes.
 - **Saisie manuelle d'abord** : pas de scan ni de reconnaissance de ticket dans un premier temps.
-- **Pas de serveur à maintenir** : les données restent sur l'iPhone et dans iCloud.
+- **Dépendances minimales** : du HTML, du CSS, du JavaScript et Node.js, sans framework ni bibliothèque externe.
+- **Partout** : un simple navigateur suffit, sur téléphone comme sur ordinateur.
 
 ## Ce que l'application n'est pas (pour l'instant)
 

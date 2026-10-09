@@ -1,6 +1,6 @@
 # garde-manger
 
-Application iPhone pour gérer les stocks d'épicerie de la maison et préparer les courses sereinement.
+Application web pour gérer les stocks d'épicerie de la maison et préparer les courses sereinement, utilisable sur iPhone et sur ordinateur.
 
 ## Documentation
 

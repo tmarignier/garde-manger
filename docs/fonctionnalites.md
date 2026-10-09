@@ -2,6 +2,12 @@
 
 ## Première version
 
+### 0. Accès familial
+
+- L'application est protégée par un mot de passe familial.
+- Tous les membres partagent le même stock et voient les modifications des autres.
+- Utilisable sur iPhone (avec ajout possible à l'écran d'accueil) et sur ordinateur.
+
 ### 1. Gérer la liste des produits en stock
 
 - Ajouter un produit : nom, catégorie (ex. épicerie salée, épicerie sucrée, boissons, hygiène), unité (paquet, boîte, bouteille, kg…).
@@ -28,8 +34,6 @@
 - Lieux de rangement (placard, cellier, congélateur).
 - Dates de péremption et alertes.
 - Tri de la liste de courses selon l'ordre des rayons du magasin.
-- Widget sur l'écran d'accueil, raccourcis Siri.
-
-## Questions ouvertes
-
-- **Partage familial** : plusieurs membres de la famille doivent-ils modifier le même stock depuis leur propre iPhone ? L'architecture proposée le permet (voir [architecture](architecture.md)), mais cela reste à confirmer.
+- Comptes individuels pour savoir qui a modifié quoi.
+- Mises à jour en temps réel entre les appareils.
+- Fonctionnement hors connexion.
