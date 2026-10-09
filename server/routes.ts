@@ -1,5 +1,6 @@
 import type { HealthResponse } from '../shared/types.ts';
 import { accountRoutes } from './account-routes.ts';
+import { productRoutes } from './product-routes.ts';
 import { ok } from './router.ts';
 import type { Route } from './router.ts';
 
@@ -14,4 +15,5 @@ export const routes: readonly Route[] = [
     },
   },
   ...accountRoutes,
+  ...productRoutes,
 ];

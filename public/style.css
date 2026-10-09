@@ -31,6 +31,11 @@
   box-sizing: border-box;
 }
 
+/* Elements with a display rule, such as .field, still hide when hidden. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   background: var(--background);
@@ -106,7 +111,9 @@ form {
 }
 
 input[type='text'],
-input[type='password'] {
+input[type='password'],
+input[type='search'],
+select {
   width: 100%;
   padding: 0.625rem 0.75rem;
   border: 1px solid var(--border);
@@ -190,4 +197,123 @@ button.link {
 
 .inline-form {
   margin-top: 1rem;
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.toolbar input {
+  flex: 1;
+  min-width: 0;
+}
+
+.toolbar button {
+  flex: none;
+}
+
+.category > h3 {
+  margin: 1.5rem 0 0.25rem;
+  font-size: 1rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.products {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.products li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.product-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-name {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-weight: 600;
+  text-align: left;
+}
+
+.quantity {
+  color: var(--muted);
+}
+
+.products li[data-low] .quantity {
+  color: var(--error);
+}
+
+.badge.low {
+  color: var(--error);
+}
+
+.stepper {
+  display: flex;
+  flex: none;
+  gap: 0.5rem;
+}
+
+/* Large enough to tap with a thumb. */
+button.step {
+  width: 2.75rem;
+  padding: 0;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.product-meta {
+  margin: 0.125rem 0 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.quantities {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 0.75rem;
+}
+
+.product-form {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+}
+
+.product-form h3 {
+  margin-top: 0;
+}
+
+.categories {
+  margin-top: 2rem;
+}
+
+.categories summary {
+  cursor: pointer;
+  color: var(--accent);
+  padding: 0.5rem 0;
+}
+
+.category-list {
+  padding-left: 1.25rem;
 }

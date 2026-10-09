@@ -38,6 +38,22 @@ export async function readJson(body: AsyncIterable<Uint8Array | string>): Promis
   }
 }
 
+// Checks that a request body is a JSON object, to read its fields.
+export function readObject(body: unknown): Record<string, unknown> {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    throw new HttpError(400, 'Expected a JSON object');
+  }
+  return body as Record<string, unknown>;
+}
+
+export function readString(body: Record<string, unknown>, key: string): string {
+  const value = body[key];
+  if (typeof value !== 'string') {
+    throw new HttpError(400, `Missing or invalid field: ${key}`);
+  }
+  return value;
+}
+
 export function sendJson(
   res: ServerResponse,
   status: number,

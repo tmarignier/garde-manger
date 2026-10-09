@@ -53,3 +53,59 @@ export type ChangePasswordRequest = {
   currentPassword: string;
   newPassword: string;
 };
+
+export type Category = {
+  id: number;
+  name: string;
+  position: number;
+};
+
+export type CategoryResponse = {
+  category: Category;
+};
+
+export type CategoriesResponse = {
+  categories: Category[];
+};
+
+// POST /api/categories.
+export type CreateCategoryRequest = {
+  name: string;
+};
+
+export type Product = {
+  id: number;
+  name: string;
+  categoryId: number | null;
+  unit: string;
+  quantity: number;
+  minQuantity: number;
+  targetQuantity: number | null;
+  // The name of the last person who changed the product, null when their
+  // account was deleted.
+  updatedByName: string | null;
+  updatedAt: string;
+};
+
+export type ProductResponse = {
+  product: Product;
+};
+
+export type ProductsResponse = {
+  products: Product[];
+};
+
+// POST /api/products and PUT /api/products/:id.
+export type ProductRequest = {
+  name: string;
+  categoryId: number | null;
+  unit: string;
+  quantity: number;
+  minQuantity: number;
+  targetQuantity: number | null;
+};
+
+// POST /api/products/:id/adjust.
+export type AdjustmentRequest = {
+  delta: number;
+};
