@@ -16,7 +16,7 @@ Pour notre famille uniquement. Tous les membres de la famille partagent le même
 
 - **Simple avant tout** : ajouter un produit ou mettre à jour une quantité doit prendre quelques secondes.
 - **Saisie manuelle d'abord** : pas de scan ni de reconnaissance de ticket dans un premier temps.
-- **Dépendances minimales** : du HTML, du CSS, du JavaScript et Node.js, sans framework ni bibliothèque externe.
+- **Dépendances minimales** : du HTML, du CSS, du JavaScript et Node.js. Une bibliothèque externe n'est ajoutée que si elle se justifie (voir [architecture](architecture.md#politique-de-dépendances)).
 - **Partout** : un simple navigateur suffit, sur téléphone comme sur ordinateur.
 
 ## Ce que l'application n'est pas (pour l'instant)

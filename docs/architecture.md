@@ -2,7 +2,7 @@
 
 ## Objectifs
 
-- **Dépendances minimales** : aucune bibliothèque externe, uniquement ce que fournissent le navigateur et Node.js.
+- **Dépendances minimales** : on part de ce que fournissent le navigateur et Node.js, et chaque bibliothèque ajoutée doit être justifiée.
 - **Partagée** : tous les membres de la famille voient et modifient le même stock.
 - **Multi-appareils** : utilisable sur iPhone comme sur ordinateur, depuis un simple navigateur.
 
@@ -26,13 +26,30 @@ Sur iPhone, l'application peut être ajoutée à l'écran d'accueil (« Sur l'é
 | Interface | HTML, CSS et JavaScript, sans framework ni étape de compilation | Rien à installer, fonctionne dans tous les navigateurs, facile à lire. |
 | Mise en page | CSS responsive, pensée d'abord pour le mobile | Une seule interface pour l'iPhone et l'ordinateur. |
 | Installation sur iPhone | Manifeste web (`manifest.json`) et icône | Ajout à l'écran d'accueil et ouverture en plein écran. |
-| Serveur | Node.js (version LTS), module intégré `node:http` | Même langage que l'interface, aucun paquet npm. |
+| Serveur | Node.js (version LTS), module intégré `node:http` | Même langage que l'interface, rien à installer. |
 | Base de données | SQLite via le module intégré `node:sqlite` | Un seul fichier, rien à installer ni administrer, sauvegarde par simple copie. |
 | Tests | Lanceur de tests intégré `node:test` | Aucun outil supplémentaire. |
 
-Le projet n'a donc **aucune dépendance npm** : il suffit d'installer Node.js pour le lancer.
+Au démarrage, le projet n'a donc **aucune dépendance npm** : il suffit d'installer Node.js pour le lancer.
 
-> Le module `node:sqlite` est intégré à Node.js et utilisable sans option depuis la version 22.13, mais il est encore marqué en développement actif. Si cela pose problème, l'alternative la plus légère est le paquet `better-sqlite3`, qui serait alors la seule dépendance.
+## Politique de dépendances
+
+On démarre sans aucune bibliothèque externe. Une dépendance peut être ajoutée si elle remplit ces conditions :
+
+- elle évite d'écrire et de maintenir une quantité significative de code ;
+- elle est stable, maintenue et largement utilisée ;
+- elle apporte peu ou pas de dépendances indirectes.
+
+Chaque dépendance ajoutée est notée ci-dessous, avec la raison de son ajout.
+
+Candidates identifiées si le besoin apparaît :
+
+| Bibliothèque | Quand l'ajouter |
+|---|---|
+| `better-sqlite3` | Si le module intégré `node:sqlite`, encore marqué en développement actif dans Node.js, pose problème. |
+| Preact | Si l'interface devient trop complexe à mettre à jour à la main. |
+
+Dépendances actuelles : aucune.
 
 ## Accès et sécurité
 
