@@ -6,4 +6,7 @@ Application web pour gérer les stocks d'épicerie de la maison et préparer les
 
 - [Vision](docs/vision.md) : pourquoi ce projet, pour qui, et ce qu'il n'est pas.
 - [Fonctionnalités](docs/fonctionnalites.md) : le périmètre de la première version et la suite.
-- [Architecture](docs/architecture.md) : les choix techniques proposés.
+- [Architecture](docs/architecture.md) : les choix techniques.
+- [Plan de développement](docs/plan.md) : les étapes pour construire la première version.
+
+Les conventions de développement sont dans [CLAUDE.md](CLAUDE.md).

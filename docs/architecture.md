@@ -2,13 +2,14 @@
 
 ## Objectifs
 
+- **TypeScript partout** : serveur, interface et tests.
 - **Dépendances minimales** : on part de ce que fournissent le navigateur et Node.js, et chaque bibliothèque ajoutée doit être justifiée.
 - **Partagée** : tous les membres de la famille voient et modifient le même stock.
 - **Multi-appareils** : utilisable sur iPhone comme sur ordinateur, depuis un simple navigateur.
 
 ## Vue d'ensemble
 
-Une application web classique : un petit serveur, installé sur une machine de la maison, garde les données dans un fichier SQLite et sert une interface en HTML, CSS et JavaScript.
+Une application web classique : un petit serveur, installé sur une machine de la maison, garde les données dans un fichier SQLite et sert une interface en HTML et CSS, avec du TypeScript compilé en JavaScript pour le navigateur.
 
 ```
  iPhone (Safari) ─┐                 Machine à la maison
@@ -25,14 +26,24 @@ Sur iPhone, l'application peut être ajoutée à l'écran d'accueil (« Sur l'é
 
 | Sujet | Choix | Pourquoi |
 |---|---|---|
-| Interface | HTML, CSS et JavaScript, sans framework ni étape de compilation | Rien à installer, fonctionne dans tous les navigateurs, facile à lire. |
+| Langage | TypeScript, en mode strict | Les erreurs de types sont détectées avant l'exécution, et les types sont partagés entre serveur et interface. |
+| Interface | HTML, CSS et TypeScript, sans framework | Fonctionne dans tous les navigateurs, facile à lire. Le TypeScript est compilé en JavaScript par `tsc`. |
 | Mise en page | CSS responsive, pensée d'abord pour le mobile | Une seule interface pour l'iPhone et l'ordinateur. |
 | Installation sur iPhone | Manifeste web (`manifest.json`) et icône | Ajout à l'écran d'accueil et ouverture en plein écran. |
-| Serveur | Node.js (version LTS), module intégré `node:http` | Même langage que l'interface, rien à installer. |
+| Serveur | Node.js 24 (LTS), module intégré `node:http` | Node.js exécute directement les fichiers `.ts` (suppression des types intégrée) : pas d'étape de compilation pour le serveur. |
 | Base de données | SQLite via le module intégré `node:sqlite` | Un seul fichier, rien à installer ni administrer, sauvegarde par simple copie. |
-| Tests | Lanceur de tests intégré `node:test` | Aucun outil supplémentaire. |
+| Tests | Lanceur de tests intégré `node:test`, tests écrits en TypeScript | Aucun outil supplémentaire. |
+| Vérification des types | `tsc --noEmit` | Node.js retire les types sans les vérifier : `tsc` s'en charge. |
 
-Au démarrage, le projet n'a donc **aucune dépendance npm** : il suffit d'installer Node.js pour le lancer.
+Au démarrage, le projet n'a donc **aucune dépendance d'exécution** : seules deux dépendances de développement sont nécessaires (voir ci-dessous).
+
+### TypeScript exécuté par Node.js
+
+Node.js retire les annotations de type au chargement des fichiers `.ts`, sans les transformer. Cela impose quelques règles, vérifiées par l'option `erasableSyntaxOnly` de `tsc` :
+
+- pas d'`enum`, de `namespace` ni de propriétés déclarées dans les paramètres du constructeur : on utilise des objets `as const` et des unions de chaînes ;
+- les imports relatifs indiquent l'extension `.ts` (`import { calculerCourses } from './courses.ts'`) ;
+- les imports de types utilisent `import type`.
 
 ## Politique de dépendances
 
@@ -51,7 +62,14 @@ Candidates identifiées si le besoin apparaît :
 | `better-sqlite3` | Si le module intégré `node:sqlite`, encore marqué en développement actif dans Node.js, pose problème. |
 | Preact | Si l'interface devient trop complexe à mettre à jour à la main. |
 
-Dépendances actuelles : aucune.
+Dépendances actuelles :
+
+| Bibliothèque | Type | Raison |
+|---|---|---|
+| `typescript` | développement | Vérification des types et compilation du code de l'interface. Indispensable pour écrire en TypeScript. |
+| `@types/node` | développement | Types des modules intégrés de Node.js. |
+
+Aucune dépendance d'exécution.
 
 ## Utilisateurs et sécurité
 
@@ -99,6 +117,7 @@ La liste de courses n'est **pas stockée** : elle est calculée à partir des pr
 
 | Méthode | Chemin | Rôle |
 |---|---|---|
+| `GET` | `/api/sante` | Vérifier que le serveur répond (sans connexion) |
 | `POST` | `/api/installation` | Créer le premier compte administrateur (uniquement si aucun compte n'existe) |
 | `POST` | `/api/connexion` | Se connecter avec son nom et son mot de passe |
 | `POST` | `/api/deconnexion` | Se déconnecter |
@@ -118,19 +137,29 @@ La liste de courses n'est **pas stockée** : elle est calculée à partir des pr
 ## Organisation du code
 
 ```
-serveur/
-  index.js        démarrage du serveur HTTP
-  routes.js       routage des requêtes de l'API
-  base.js         accès à SQLite et création des tables
-  courses.js      calcul de la liste de courses (logique métier)
-  auth.js         comptes, mots de passe et sessions
-public/
+serveur/                exécuté directement par Node.js
+  index.ts              démarrage du serveur HTTP
+  routes.ts             routage des requêtes de l'API
+  base.ts               accès à SQLite et création des tables
+  courses.ts            calcul de la liste de courses (logique métier)
+  auth.ts               comptes, mots de passe et sessions
+client/                 compilé par tsc vers public/js/
+  app.ts                point d'entrée de l'interface
+  api.ts                appels à l'API
+  vues/                 écrans (stock, produit, courses, comptes)
+commun/
+  types.ts              types partagés entre serveur et interface
+public/                 servi tel quel par le serveur
   index.html
   style.css
-  app.js
   manifest.json
   icone.png
+  js/                   généré par la compilation, non versionné
 tests/
+  *.test.ts
+tsconfig.json           configuration du serveur, des tests et du code commun
+tsconfig.client.json    configuration de l'interface (sortie vers public/js/)
+package.json
 ```
 
 La logique métier (calcul de la liste de courses, variations de quantité) est isolée pour être testée sans lancer le serveur.
