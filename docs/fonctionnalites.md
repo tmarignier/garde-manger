@@ -26,7 +26,8 @@
 - Chaque produit a un **seuil minimum** (ex. « 2 paquets de pâtes »).
 - Dès que la quantité passe **sous le seuil**, le produit apparaît automatiquement dans la liste de courses.
 - Chaque produit peut aussi avoir une **quantité cible** (ex. « 4 paquets ») : la liste propose alors d'en acheter la différence. Sans quantité cible, on propose de remonter jusqu'au seuil.
-- Pendant les courses, on coche les produits achetés. Cocher un produit ajoute la quantité achetée au stock.
+- Pendant les courses, on coche les produits achetés, en corrigeant si besoin la quantité achetée. Valider les achats ajoute les quantités achetées au stock.
+- La liste est regroupée par catégorie, comme le stock, et se manipule d'une main sur le téléphone.
 - On peut ajouter à la main un article ponctuel à la liste (hors stock suivi).
 
 ## Plus tard (idées, non prioritaires)

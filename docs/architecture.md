@@ -121,10 +121,17 @@ products                  produits suivis en stock
   updated_by (user_id), updated_at
 
 extra_items               articles ponctuels ajoutés à la main à la liste de courses
-  id, name, checked
+  id, name
 ```
 
-La liste de courses n'est **pas stockée** : elle est calculée à partir des produits dont `quantity < min_quantity`, à laquelle s'ajoutent les articles ponctuels. Quantité à acheter = `target_quantity − quantity` si une cible existe, sinon `min_quantity − quantity`.
+La liste de courses n'est **pas stockée** : elle est calculée à partir des produits dont `quantity < min_quantity`, à laquelle s'ajoutent les articles ponctuels. Quantité à acheter = `target_quantity − quantity` si une cible existe, sinon `min_quantity − quantity`. Le calcul est dans `server/shopping-list.ts`, sans HTTP ni SQLite.
+
+### Courses
+
+- Pendant les courses, les articles cochés et les quantités réellement achetées restent **sur l'appareil** (`localStorage`), jusqu'à la validation. Ils survivent à un rechargement de la page par Safari, mais ne sont pas partagés entre les téléphones.
+- Valider envoie en une fois les quantités achetées et les articles ponctuels cochés. Les quantités s'ajoutent au stock du moment, comme un `+` : un changement fait à la maison pendant les courses est conservé. Les articles ponctuels validés sont retirés de la liste. Tout est enregistré dans une seule transaction.
+- Un produit ou un article ponctuel supprimé entre-temps est ignoré à la validation. Un produit qui a quitté la liste entre-temps (quelqu'un l'a racheté) est décoché sur l'appareil au rechargement de la liste.
+- La quantité achetée est proposée par défaut et se modifie avant de valider (par exemple un lot de six au lieu de quatre paquets).
 
 ### Migrations
 
@@ -150,8 +157,9 @@ Les tables sont déclarées `STRICT` (SQLite vérifie le type de chaque valeur) 
 | `DELETE` | `/api/products/:id` | Supprimer un produit |
 | `POST` | `/api/products/:id/adjust` | Ajuster la quantité (`{ "delta": -1 }`) |
 | `GET` | `/api/shopping-list` | Obtenir la liste de courses calculée |
-| `POST` | `/api/shopping-list/purchases` | Valider des achats (ajoute les quantités au stock) |
-| `POST` / `DELETE` | `/api/extra-items` | Ajouter ou retirer un article ponctuel |
+| `POST` | `/api/shopping-list/purchases` | Valider des achats (`{ "purchases": [{ "productId": 1, "quantity": 3 }], "extraItemIds": [2] }`) : ajoute les quantités au stock, retire les articles ponctuels, et renvoie la nouvelle liste |
+| `POST` | `/api/extra-items` | Ajouter un article ponctuel (`{ "name": "Bougies" }`) |
+| `DELETE` | `/api/extra-items/:id` | Retirer un article ponctuel |
 | `GET` / `POST` | `/api/categories` | Lister ou ajouter des catégories |
 
 Toutes les routes exigent une session valide, sauf celles marquées « sans connexion » : sinon le serveur répond 401. Les routes des comptes (`/api/users`) sont réservées aux administrateurs (403 pour les autres). Chaque route déclare son niveau d'accès (`access` dans `server/router.ts` : `public`, `user` par défaut, ou `admin`), et le serveur le vérifie avant d'appeler la route.
@@ -168,13 +176,15 @@ server/                 exécuté directement par Node.js
   routes.ts             liste des routes de l'API
   http.ts               lecture du JSON reçu, réponses JSON, erreurs HTTP
   static.ts             service des fichiers de public/
-  database.ts           accès à SQLite, création des tables et migrations
+  database.ts           accès à SQLite, création des tables, migrations et transactions
   shopping-list.ts      calcul de la liste de courses (logique métier)
   auth.ts               mots de passe, sessions et cookie de session
   users.ts              lecture et écriture des comptes en base
   account-routes.ts     routes de l'API pour la connexion et les comptes
   products.ts           lecture et écriture des produits et catégories en base
   product-routes.ts     routes de l'API pour les produits et catégories
+  extra-items.ts        lecture et écriture des articles ponctuels en base
+  shopping-list-routes.ts  routes de l'API pour la liste de courses et les achats
 client/                 compilé par tsc vers public/js/client/
   app.ts                point d'entrée de l'interface
   api.ts                appels à l'API

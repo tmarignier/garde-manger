@@ -3,6 +3,7 @@ import { accountRoutes } from './account-routes.ts';
 import { productRoutes } from './product-routes.ts';
 import { ok } from './router.ts';
 import type { Route } from './router.ts';
+import { shoppingListRoutes } from './shopping-list-routes.ts';
 
 export const routes: readonly Route[] = [
   {
@@ -16,4 +17,5 @@ export const routes: readonly Route[] = [
   },
   ...accountRoutes,
   ...productRoutes,
+  ...shoppingListRoutes,
 ];

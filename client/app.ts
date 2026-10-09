@@ -4,12 +4,14 @@ import { h } from './dom.ts';
 import { accountView } from './views/account.ts';
 import { loginView } from './views/login.ts';
 import { setupView } from './views/setup.ts';
+import { shoppingView } from './views/shopping.ts';
 import { stockView } from './views/stock.ts';
 import { usersView } from './views/users.ts';
 
 // Screens of the logged-in app, chosen by the URL hash.
 const pages = {
   stock: { hash: '#/', label: 'Stock' },
+  shopping: { hash: '#/shopping-list', label: 'Courses' },
   account: { hash: '#/account', label: 'Mon compte' },
   users: { hash: '#/users', label: 'Comptes' },
 } as const;
@@ -17,6 +19,9 @@ const pages = {
 type Page = keyof typeof pages;
 
 function currentPage(user: User): Page {
+  if (location.hash === pages.shopping.hash) {
+    return 'shopping';
+  }
   if (location.hash === pages.account.hash) {
     return 'account';
   }
@@ -30,6 +35,8 @@ function pageView(page: Page, user: User): HTMLElement {
   switch (page) {
     case 'stock':
       return stockView();
+    case 'shopping':
+      return shoppingView();
     case 'account':
       return accountView(user);
     case 'users':
