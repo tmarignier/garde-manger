@@ -2,10 +2,12 @@
 
 ## Première version
 
-### 0. Accès familial
+### 0. Comptes de la famille
 
-- L'application est protégée par un mot de passe familial.
-- Tous les membres partagent le même stock et voient les modifications des autres.
+- Chaque membre de la famille a son compte (nom et mot de passe).
+- Le premier compte créé est administrateur et crée les comptes des autres membres.
+- Chacun peut changer son mot de passe ; l'administrateur peut le réinitialiser.
+- Tous les membres partagent le même stock et voient les modifications des autres, avec le nom de la dernière personne qui a modifié chaque produit.
 - Utilisable sur iPhone (avec ajout possible à l'écran d'accueil) et sur ordinateur.
 
 ### 1. Gérer la liste des produits en stock
@@ -34,6 +36,6 @@
 - Lieux de rangement (placard, cellier, congélateur).
 - Dates de péremption et alertes.
 - Tri de la liste de courses selon l'ordre des rayons du magasin.
-- Comptes individuels pour savoir qui a modifié quoi.
+- Historique complet des mouvements de stock (qui a ajouté ou retiré quoi, et quand).
 - Mises à jour en temps réel entre les appareils.
 - Fonctionnement hors connexion.
