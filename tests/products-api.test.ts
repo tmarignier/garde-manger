@@ -116,7 +116,9 @@ describe('products API', () => {
       { ...valid, categoryId: '1' },
       { ...valid, quantity: -1 },
       { ...valid, quantity: '2' },
+      { ...valid, quantity: undefined },
       { ...valid, minQuantity: undefined },
+      { ...valid, minQuantity: 3, targetQuantity: 2 },
       { ...valid, targetQuantity: -2 },
       { ...valid, unit: 3 },
     ];
@@ -151,6 +153,17 @@ describe('products API', () => {
     assert.equal(missing.status, 404);
   });
 
+  it('keeps the stock when an edit does not send the quantity', async () => {
+    const created = await createProduct(admin, { quantity: 2 });
+    await adjust(member, created.id, -1);
+    const { quantity: _quantity, ...fields } = created;
+    const response = await admin.request('PUT', `/api/products/${created.id}`, { ...fields, name: 'Spaghetti' });
+    assert.equal(response.status, 200);
+    const updated = (response.body as { product: Product }).product;
+    assert.equal(updated.name, 'Spaghetti');
+    assert.equal(updated.quantity, 1);
+  });
+
   it('deletes a product', async () => {
     const created = await createProduct(admin);
     assert.equal((await member.request('DELETE', `/api/products/${created.id}`)).status, 204);
@@ -180,6 +193,8 @@ describe('products API', () => {
     const response = await adjust(member, created.id, -1);
     assert.equal(response.status, 200);
     assert.equal(response.product.quantity, 0);
+    // Nothing changed, so the product is not marked as changed by Léa.
+    assert.equal(response.product.updatedByName, 'Thibault');
   });
 
   it('validates adjustments', async () => {

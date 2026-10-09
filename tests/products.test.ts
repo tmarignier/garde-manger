@@ -6,6 +6,7 @@ import {
   isBelowMinimum,
   isValidDelta,
   isValidQuantity,
+  isValidTarget,
   matchesSearch,
   normalizeText,
   parseQuantity,
@@ -58,6 +59,15 @@ describe('quantity validation', () => {
     for (const value of [0, Number.NaN, '1', undefined]) {
       assert.equal(isValidDelta(value), false, String(value));
     }
+  });
+});
+
+describe('isValidTarget', () => {
+  it('refuses a target below the minimum', () => {
+    assert.equal(isValidTarget(2, null), true);
+    assert.equal(isValidTarget(2, 2), true);
+    assert.equal(isValidTarget(2, 4), true);
+    assert.equal(isValidTarget(2, 1), false);
   });
 });
 

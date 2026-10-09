@@ -105,6 +105,12 @@ export type ProductRequest = {
   targetQuantity: number | null;
 };
 
+// PUT /api/products/:id. Without quantity, the stock is left as it is, so that
+// editing a product does not undo a + or − made meanwhile on another device.
+export type UpdateProductRequest = Omit<ProductRequest, 'quantity'> & {
+  quantity?: number;
+};
+
 // POST /api/products/:id/adjust.
 export type AdjustmentRequest = {
   delta: number;

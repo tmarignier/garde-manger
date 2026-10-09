@@ -96,6 +96,8 @@ Une gestion d'utilisateurs basique : chaque membre de la famille a son propre co
 
 - Les modifications de quantité sont envoyées comme des **variations** (« +1 », « −1 ») plutôt que comme une valeur absolue. Si deux personnes retirent un paquet en même temps, les deux retraits sont bien comptés.
 - La quantité en stock n'est jamais négative. Le bouton `−` est désactivé à 0, et si deux personnes retirent le dernier paquet en même temps, le serveur s'arrête à 0 au lieu de refuser la variation.
+- Modifier la fiche d'un produit sans toucher à sa quantité n'envoie pas la quantité : un `+` ou un `−` fait entre-temps sur un autre appareil n'est pas écrasé.
+- La quantité cible, quand elle existe, n'est jamais inférieure au seuil minimum : sinon le produit resterait dans la liste de courses juste après l'achat.
 - Les quantités acceptent les décimales (par exemple 1,5 kg), arrondies à trois chiffres après la virgule.
 - L'interface recharge les données quand on revient sur l'application et après chaque modification. Pas de temps réel dans la première version.
 

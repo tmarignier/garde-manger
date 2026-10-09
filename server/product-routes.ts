@@ -6,6 +6,7 @@ import {
   applyAdjustment,
   isValidDelta,
   isValidQuantity,
+  isValidTarget,
   normalizeText,
   roundQuantity,
 } from '../shared/products.ts';
@@ -15,6 +16,7 @@ import type {
   ProductRequest,
   ProductResponse,
   ProductsResponse,
+  UpdateProductRequest,
 } from '../shared/types.ts';
 import { HttpError, readObject, readString } from './http.ts';
 import {
@@ -48,21 +50,30 @@ function readQuantity(body: Record<string, unknown>, key: string): number {
   return roundQuantity(value);
 }
 
-function readProductRequest(db: DatabaseSync, rawBody: unknown): ProductRequest {
+// Reads a product sent to be added or edited. The quantity is required to add
+// a product and optional to edit one.
+function readProductRequest(db: DatabaseSync, rawBody: unknown): UpdateProductRequest {
   const body = readObject(rawBody);
   const categoryId = body['categoryId'] ?? null;
   if (categoryId !== null && (typeof categoryId !== 'number' || !categoryExists(db, categoryId))) {
     throw new HttpError(400, 'Missing or invalid field: categoryId');
   }
-  const targetQuantity = body['targetQuantity'] ?? null;
-  return {
+  const minQuantity = readQuantity(body, 'minQuantity');
+  const targetQuantity = (body['targetQuantity'] ?? null) === null ? null : readQuantity(body, 'targetQuantity');
+  if (!isValidTarget(minQuantity, targetQuantity)) {
+    throw new HttpError(400, 'targetQuantity must not be below minQuantity');
+  }
+  const product: UpdateProductRequest = {
     name: readText(body, 'name', PRODUCT_NAME_MAX_LENGTH),
     categoryId,
     unit: body['unit'] === undefined ? '' : readText(body, 'unit', UNIT_MAX_LENGTH, true),
-    quantity: readQuantity(body, 'quantity'),
-    minQuantity: readQuantity(body, 'minQuantity'),
-    targetQuantity: targetQuantity === null ? null : readQuantity(body, 'targetQuantity'),
+    minQuantity,
+    targetQuantity,
   };
+  if (body['quantity'] !== undefined) {
+    product.quantity = readQuantity(body, 'quantity');
+  }
+  return product;
 }
 
 function readProductId(params: Record<string, string>): number {
@@ -114,7 +125,11 @@ export const productRoutes: readonly Route[] = [
     method: 'POST',
     path: '/api/products',
     handler: (context) => {
-      const product = readProductRequest(context.db, context.body);
+      const { quantity, ...fields } = readProductRequest(context.db, context.body);
+      if (quantity === undefined) {
+        throw new HttpError(400, 'Missing or invalid field: quantity');
+      }
+      const product: ProductRequest = { ...fields, quantity };
       const response: ProductResponse = { product: insertProduct(context.db, product, currentUser(context).id) };
       return created(response);
     },
@@ -154,7 +169,12 @@ export const productRoutes: readonly Route[] = [
         throw new HttpError(400, 'Missing or invalid field: delta');
       }
       const { product } = productResponse(context.db, id);
-      updateQuantity(context.db, id, applyAdjustment(product.quantity, delta), currentUser(context).id);
+      const quantity = applyAdjustment(product.quantity, delta);
+      // A − at 0 changes nothing, so it is not recorded as a change either.
+      if (quantity === product.quantity) {
+        return ok({ product });
+      }
+      updateQuantity(context.db, id, quantity, currentUser(context).id);
       return ok(productResponse(context.db, id));
     },
   },

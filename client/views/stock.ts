@@ -15,6 +15,7 @@ import {
   UNIT_MAX_LENGTH,
   groupProducts,
   isBelowMinimum,
+  isValidTarget,
   matchesSearch,
   parseQuantity,
 } from '../../shared/products.ts';
@@ -270,6 +271,13 @@ export function stockView(): HTMLElement {
         return;
       }
       const { quantity: quantityValue, minQuantity: minQuantityValue, targetQuantity: targetValue } = values;
+      if (!isValidTarget(minQuantityValue, targetValue)) {
+        formMessage.show('La quantité cible ne peut pas être inférieure au seuil minimum.');
+        return;
+      }
+      // An untouched quantity is not sent, so that a + or − made meanwhile on
+      // another device is kept.
+      const quantityChanged = product === null || quantity.value !== quantity.defaultValue;
       void whileSubmitting(form, async () => {
         try {
           const request: ProductRequest = {
@@ -284,7 +292,8 @@ export function stockView(): HTMLElement {
             const saved = await createProduct(request);
             message.show(`« ${saved.name} » a été ajouté.`, 'ok');
           } else {
-            await updateProduct(product.id, request);
+            const { quantity: _quantity, ...fields } = request;
+            await updateProduct(product.id, quantityChanged ? request : fields);
             message.show(`« ${request.name.trim()} » a été modifié.`, 'ok');
           }
           close();

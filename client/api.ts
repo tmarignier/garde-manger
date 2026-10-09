@@ -9,6 +9,7 @@ import type {
   ProductRequest,
   ResetPasswordRequest,
   SessionResponse,
+  UpdateProductRequest,
   User,
 } from '../shared/types.ts';
 
@@ -205,7 +206,7 @@ export async function createProduct(product: ProductRequest): Promise<Product> {
   return readProduct(await request('POST', '/api/products', product));
 }
 
-export async function updateProduct(id: number, product: ProductRequest): Promise<Product> {
+export async function updateProduct(id: number, product: UpdateProductRequest): Promise<Product> {
   return readProduct(await request('PUT', `/api/products/${id}`, product));
 }
 

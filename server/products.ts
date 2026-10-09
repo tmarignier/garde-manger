@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { nameKey } from '../shared/accounts.ts';
-import type { Category, Product, ProductRequest } from '../shared/types.ts';
+import type { Category, Product, ProductRequest, UpdateProductRequest } from '../shared/types.ts';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -108,17 +108,18 @@ export function insertProduct(db: DatabaseSync, product: ProductRequest, userId:
   return created;
 }
 
-// Returns false when the product does not exist.
+// Returns false when the product does not exist. Without a quantity, the
+// stored quantity is kept.
 export function updateProduct(
   db: DatabaseSync,
   id: number,
-  product: ProductRequest,
+  product: UpdateProductRequest,
   userId: number,
   now = new Date(),
 ): boolean {
   const result = db
     .prepare(
-      `UPDATE products SET name = ?, category_id = ?, unit = ?, quantity = ?, min_quantity = ?,
+      `UPDATE products SET name = ?, category_id = ?, unit = ?, quantity = coalesce(?, quantity), min_quantity = ?,
          target_quantity = ?, updated_by = ?, updated_at = ?
        WHERE id = ?`,
     )
@@ -126,7 +127,7 @@ export function updateProduct(
       product.name,
       product.categoryId,
       product.unit,
-      product.quantity,
+      product.quantity ?? null,
       product.minQuantity,
       product.targetQuantity,
       userId,

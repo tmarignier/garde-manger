@@ -22,6 +22,12 @@ export function isValidDelta(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value !== 0 && Math.abs(value) <= QUANTITY_MAX;
 }
 
+// A target below the minimum would leave the product on the shopping list
+// right after buying it.
+export function isValidTarget(minQuantity: number, targetQuantity: number | null): boolean {
+  return targetQuantity === null || targetQuantity >= minQuantity;
+}
+
 // The quantity after an adjustment. Stock never goes below zero: removing a
 // packet that was not counted leaves the product at 0.
 export function applyAdjustment(quantity: number, delta: number): number {
