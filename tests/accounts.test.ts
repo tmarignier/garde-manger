@@ -152,6 +152,17 @@ describe('accounts API', () => {
     assert.equal(device.cookie, null);
   });
 
+  it('closes the previous session of a device that logs in again', async () => {
+    const admin = await setUpAdmin();
+    await createMember(admin);
+    const oldCookie = admin.cookie;
+    assert.equal((await admin.request('POST', '/api/login', { name: 'Léa', password: 'lea-password' })).status, 200);
+    assert.notEqual(admin.cookie, oldCookie);
+
+    admin.cookie = oldCookie;
+    assert.equal((await admin.request('GET', '/api/users')).status, 401);
+  });
+
   it('logs out', async () => {
     const admin = await setUpAdmin();
     const cookie = admin.cookie;

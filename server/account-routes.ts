@@ -63,8 +63,12 @@ function readUserId(params: Record<string, string>): number {
   return id;
 }
 
-// Opens a session for the user and answers with the cookie that holds it.
+// Opens a session for the user and answers with the cookie that holds it. A
+// session the device already had is closed, since its cookie is replaced.
 function logIn(context: RouteContext, user: User): RouteResult {
+  if (context.sessionToken !== null) {
+    deleteSession(context.db, context.sessionToken);
+  }
   const token = createSession(context.db, user.id);
   const body: UserResponse = { user };
   return ok(body, { 'Set-Cookie': sessionCookie(token, context.secure) });

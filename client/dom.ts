@@ -3,8 +3,8 @@
 type Child = Node | string | null | false;
 type Attributes = Record<string, string | boolean | undefined>;
 
-// Creates an element. Boolean attributes are added when true; event handlers
-// are attached with `on` afterwards.
+// Creates an element. Boolean attributes are added when true and left out
+// when false or undefined; event listeners are added afterwards.
 export function h<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   attributes: Attributes = {},
