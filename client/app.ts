@@ -2,14 +2,14 @@ import { errorMessage, getSession, logOut, setUnauthorizedHandler } from './api.
 import type { User } from '../shared/types.ts';
 import { h } from './dom.ts';
 import { accountView } from './views/account.ts';
-import { homeView } from './views/home.ts';
 import { loginView } from './views/login.ts';
 import { setupView } from './views/setup.ts';
+import { stockView } from './views/stock.ts';
 import { usersView } from './views/users.ts';
 
 // Screens of the logged-in app, chosen by the URL hash.
 const pages = {
-  home: { hash: '#/', label: 'Stock' },
+  stock: { hash: '#/', label: 'Stock' },
   account: { hash: '#/account', label: 'Mon compte' },
   users: { hash: '#/users', label: 'Comptes' },
 } as const;
@@ -23,13 +23,13 @@ function currentPage(user: User): Page {
   if (location.hash === pages.users.hash && user.isAdmin) {
     return 'users';
   }
-  return 'home';
+  return 'stock';
 }
 
 function pageView(page: Page, user: User): HTMLElement {
   switch (page) {
-    case 'home':
-      return homeView(user);
+    case 'stock':
+      return stockView();
     case 'account':
       return accountView(user);
     case 'users':

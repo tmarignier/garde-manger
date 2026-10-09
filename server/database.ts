@@ -57,6 +57,12 @@ export const migrations: readonly string[] = [
   UPDATE users SET name_key = lower(name);
   CREATE UNIQUE INDEX users_name_key ON users (name_key);
   `,
+  // Same as users: 'Épicerie' and 'épicerie' must be one category.
+  `
+  ALTER TABLE categories ADD COLUMN name_key TEXT NOT NULL DEFAULT '';
+  UPDATE categories SET name_key = lower(name);
+  CREATE UNIQUE INDEX categories_name_key ON categories (name_key);
+  `,
 ];
 
 export function getSchemaVersion(db: DatabaseSync): number {

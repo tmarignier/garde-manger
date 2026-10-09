@@ -10,7 +10,7 @@ import {
   verifyDummyPassword,
   verifyPassword,
 } from './auth.ts';
-import { HttpError } from './http.ts';
+import { HttpError, readObject, readString } from './http.ts';
 import { created, currentUser, noContent, ok } from './router.ts';
 import type { Route, RouteContext, RouteResult } from './router.ts';
 import {
@@ -23,21 +23,6 @@ import {
   nameExists,
   updatePasswordHash,
 } from './users.ts';
-
-function readObject(body: unknown): Record<string, unknown> {
-  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
-    throw new HttpError(400, 'Expected a JSON object');
-  }
-  return body as Record<string, unknown>;
-}
-
-function readString(body: Record<string, unknown>, key: string): string {
-  const value = body[key];
-  if (typeof value !== 'string') {
-    throw new HttpError(400, `Missing or invalid field: ${key}`);
-  }
-  return value;
-}
 
 function readName(body: Record<string, unknown>): string {
   const name = normalizeName(readString(body, 'name'));

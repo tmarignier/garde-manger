@@ -95,6 +95,10 @@ Une gestion d'utilisateurs basique : chaque membre de la famille a son propre co
 ## Utilisation à plusieurs
 
 - Les modifications de quantité sont envoyées comme des **variations** (« +1 », « −1 ») plutôt que comme une valeur absolue. Si deux personnes retirent un paquet en même temps, les deux retraits sont bien comptés.
+- La quantité en stock n'est jamais négative. Le bouton `−` est désactivé à 0, et si deux personnes retirent le dernier paquet en même temps, le serveur s'arrête à 0 au lieu de refuser la variation.
+- Modifier la fiche d'un produit sans toucher à sa quantité n'envoie pas la quantité : un `+` ou un `−` fait entre-temps sur un autre appareil n'est pas écrasé.
+- La quantité cible, quand elle existe, n'est jamais inférieure au seuil minimum : sinon le produit resterait dans la liste de courses juste après l'achat.
+- Les quantités acceptent les décimales (par exemple 1,5 kg), arrondies à trois chiffres après la virgule.
 - L'interface recharge les données quand on revient sur l'application et après chaque modification. Pas de temps réel dans la première version.
 
 ## Modèle de données
@@ -109,7 +113,7 @@ sessions                  sessions de connexion
   id (jeton aléatoire), user_id, expires_at
 
 categories                catégories de produits
-  id, name, position
+  id, name, name_key (nom en minuscules, unique), position (ordre d'affichage)
 
 products                  produits suivis en stock
   id, name, category_id, unit,
@@ -169,6 +173,8 @@ server/                 exécuté directement par Node.js
   auth.ts               mots de passe, sessions et cookie de session
   users.ts              lecture et écriture des comptes en base
   account-routes.ts     routes de l'API pour la connexion et les comptes
+  products.ts           lecture et écriture des produits et catégories en base
+  product-routes.ts     routes de l'API pour les produits et catégories
 client/                 compilé par tsc vers public/js/client/
   app.ts                point d'entrée de l'interface
   api.ts                appels à l'API
@@ -177,6 +183,7 @@ client/                 compilé par tsc vers public/js/client/
 shared/
   types.ts              types partagés entre serveur et interface
   accounts.ts           règles des comptes (longueur du nom et du mot de passe), communes aux deux
+  products.ts           règles du stock (validation, variations de quantité, regroupement, recherche)
 public/                 servi tel quel par le serveur
   index.html
   style.css

@@ -1,11 +1,15 @@
 import type {
+  Category,
   ChangePasswordRequest,
   CreateUserRequest,
   CredentialsRequest,
   ErrorResponse,
   HealthResponse,
+  Product,
+  ProductRequest,
   ResetPasswordRequest,
   SessionResponse,
+  UpdateProductRequest,
   User,
 } from '../shared/types.ts';
 
@@ -137,4 +141,79 @@ export async function resetPassword(id: number, reset: ResetPasswordRequest): Pr
 
 export async function deleteUser(id: number): Promise<void> {
   await request('DELETE', `/api/users/${id}`);
+}
+
+function isNumberOrNull(value: unknown): value is number | null {
+  return value === null || typeof value === 'number';
+}
+
+function isCategory(value: unknown): value is Category {
+  return (
+    isRecord(value) &&
+    typeof value['id'] === 'number' &&
+    typeof value['name'] === 'string' &&
+    typeof value['position'] === 'number'
+  );
+}
+
+function isProduct(value: unknown): value is Product {
+  return (
+    isRecord(value) &&
+    typeof value['id'] === 'number' &&
+    typeof value['name'] === 'string' &&
+    isNumberOrNull(value['categoryId']) &&
+    typeof value['unit'] === 'string' &&
+    typeof value['quantity'] === 'number' &&
+    typeof value['minQuantity'] === 'number' &&
+    isNumberOrNull(value['targetQuantity']) &&
+    (value['updatedByName'] === null || typeof value['updatedByName'] === 'string') &&
+    typeof value['updatedAt'] === 'string'
+  );
+}
+
+function readProduct(data: unknown): Product {
+  if (!isRecord(data) || !isProduct(data['product'])) {
+    throw new Error('Unexpected product response');
+  }
+  return data['product'];
+}
+
+export async function listCategories(): Promise<Category[]> {
+  const data = await request('GET', '/api/categories');
+  if (!isRecord(data) || !Array.isArray(data['categories']) || !data['categories'].every(isCategory)) {
+    throw new Error('Unexpected categories response');
+  }
+  return data['categories'];
+}
+
+export async function createCategory(name: string): Promise<Category> {
+  const data = await request('POST', '/api/categories', { name });
+  if (!isRecord(data) || !isCategory(data['category'])) {
+    throw new Error('Unexpected category response');
+  }
+  return data['category'];
+}
+
+export async function listProducts(): Promise<Product[]> {
+  const data = await request('GET', '/api/products');
+  if (!isRecord(data) || !Array.isArray(data['products']) || !data['products'].every(isProduct)) {
+    throw new Error('Unexpected products response');
+  }
+  return data['products'];
+}
+
+export async function createProduct(product: ProductRequest): Promise<Product> {
+  return readProduct(await request('POST', '/api/products', product));
+}
+
+export async function updateProduct(id: number, product: UpdateProductRequest): Promise<Product> {
+  return readProduct(await request('PUT', `/api/products/${id}`, product));
+}
+
+export async function deleteProduct(id: number): Promise<void> {
+  await request('DELETE', `/api/products/${id}`);
+}
+
+export async function adjustProduct(id: number, delta: number): Promise<Product> {
+  return readProduct(await request('POST', `/api/products/${id}/adjust`, { delta }));
 }
