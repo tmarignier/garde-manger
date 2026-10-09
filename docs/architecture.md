@@ -3,6 +3,7 @@
 ## Objectifs
 
 - **TypeScript partout** : serveur, interface et tests.
+- **Code en anglais** : noms, fichiers, routes, tables et commentaires. L'interface reste en français pour la famille.
 - **Dépendances minimales** : on part de ce que fournissent le navigateur et Node.js, et chaque bibliothèque ajoutée doit être justifiée.
 - **Partagée** : tous les membres de la famille voient et modifient le même stock.
 - **Multi-appareils** : utilisable sur iPhone comme sur ordinateur, depuis un simple navigateur.
@@ -42,7 +43,7 @@ Au démarrage, le projet n'a donc **aucune dépendance d'exécution** : seules d
 Node.js retire les annotations de type au chargement des fichiers `.ts`, sans les transformer. Cela impose quelques règles, vérifiées par l'option `erasableSyntaxOnly` de `tsc` :
 
 - pas d'`enum`, de `namespace` ni de propriétés déclarées dans les paramètres du constructeur : on utilise des objets `as const` et des unions de chaînes ;
-- les imports relatifs indiquent l'extension `.ts` (`import { calculerCourses } from './courses.ts'`) ;
+- les imports relatifs indiquent l'extension `.ts` (`import { computeShoppingList } from './shopping-list.ts'`) ;
 - les imports de types utilisent `import type`.
 
 ## Politique de dépendances
@@ -92,72 +93,74 @@ Une gestion d'utilisateurs basique : chaque membre de la famille a son propre co
 
 ## Modèle de données
 
+Les noms des tables et colonnes sont en anglais, en `snake_case`.
+
 ```
-utilisateur
-  id, nom, mot_de_passe_hache, administrateur (booléen), cree_le
+users                     comptes de la famille
+  id, name, password_hash, is_admin (booléen), created_at
 
-session
-  id (jeton aléatoire), utilisateur_id, expire_le
+sessions                  sessions de connexion
+  id (jeton aléatoire), user_id, expires_at
 
-categorie
-  id, nom, ordre
+categories                catégories de produits
+  id, name, position
 
-produit
-  id, nom, categorie_id, unite,
-  quantite, seuil_minimum, quantite_cible (optionnelle),
-  modifie_par (utilisateur_id), modifie_le
+products                  produits suivis en stock
+  id, name, category_id, unit,
+  quantity, min_quantity (seuil minimum), target_quantity (optionnelle),
+  updated_by (user_id), updated_at
 
-article_ponctuel          (ajouté à la main à la liste de courses)
-  id, nom, coche
+extra_items               articles ponctuels ajoutés à la main à la liste de courses
+  id, name, checked
 ```
 
-La liste de courses n'est **pas stockée** : elle est calculée à partir des produits dont `quantite < seuil_minimum`, à laquelle s'ajoutent les articles ponctuels. Quantité à acheter = `quantite_cible − quantite` si une cible existe, sinon `seuil_minimum − quantite`.
+La liste de courses n'est **pas stockée** : elle est calculée à partir des produits dont `quantity < min_quantity`, à laquelle s'ajoutent les articles ponctuels. Quantité à acheter = `target_quantity − quantity` si une cible existe, sinon `min_quantity − quantity`.
 
 ## API
 
 | Méthode | Chemin | Rôle |
 |---|---|---|
-| `GET` | `/api/sante` | Vérifier que le serveur répond (sans connexion) |
-| `POST` | `/api/installation` | Créer le premier compte administrateur (uniquement si aucun compte n'existe) |
-| `POST` | `/api/connexion` | Se connecter avec son nom et son mot de passe |
-| `POST` | `/api/deconnexion` | Se déconnecter |
-| `PUT` | `/api/moi/mot-de-passe` | Changer son mot de passe |
-| `GET` / `POST` | `/api/utilisateurs` | Lister ou créer des comptes (administrateur) |
-| `PUT` / `DELETE` | `/api/utilisateurs/:id` | Réinitialiser le mot de passe ou supprimer un compte (administrateur) |
-| `GET` | `/api/produits` | Lister les produits |
-| `POST` | `/api/produits` | Ajouter un produit |
-| `PUT` | `/api/produits/:id` | Modifier un produit |
-| `DELETE` | `/api/produits/:id` | Supprimer un produit |
-| `POST` | `/api/produits/:id/variation` | Ajuster la quantité (`{ "delta": -1 }`) |
-| `GET` | `/api/courses` | Obtenir la liste de courses calculée |
-| `POST` | `/api/courses/achats` | Valider des achats (ajoute les quantités au stock) |
-| `POST` / `DELETE` | `/api/articles-ponctuels` | Ajouter ou retirer un article ponctuel |
+| `GET` | `/api/health` | Vérifier que le serveur répond (sans connexion) |
+| `POST` | `/api/setup` | Créer le premier compte administrateur (uniquement si aucun compte n'existe) |
+| `POST` | `/api/login` | Se connecter avec son nom et son mot de passe |
+| `POST` | `/api/logout` | Se déconnecter |
+| `PUT` | `/api/me/password` | Changer son mot de passe |
+| `GET` / `POST` | `/api/users` | Lister ou créer des comptes (administrateur) |
+| `PUT` / `DELETE` | `/api/users/:id` | Réinitialiser le mot de passe ou supprimer un compte (administrateur) |
+| `GET` | `/api/products` | Lister les produits |
+| `POST` | `/api/products` | Ajouter un produit |
+| `PUT` | `/api/products/:id` | Modifier un produit |
+| `DELETE` | `/api/products/:id` | Supprimer un produit |
+| `POST` | `/api/products/:id/adjust` | Ajuster la quantité (`{ "delta": -1 }`) |
+| `GET` | `/api/shopping-list` | Obtenir la liste de courses calculée |
+| `POST` | `/api/shopping-list/purchases` | Valider des achats (ajoute les quantités au stock) |
+| `POST` / `DELETE` | `/api/extra-items` | Ajouter ou retirer un article ponctuel |
 | `GET` / `POST` | `/api/categories` | Lister ou ajouter des catégories |
 
 ## Organisation du code
 
 ```
-serveur/                exécuté directement par Node.js
+server/                 exécuté directement par Node.js
   index.ts              démarrage du serveur HTTP
-  routes.ts             routage des requêtes de l'API
-  base.ts               accès à SQLite et création des tables
-  courses.ts            calcul de la liste de courses (logique métier)
+  router.ts             routage des requêtes de l'API
+  database.ts           accès à SQLite, création des tables et migrations
+  shopping-list.ts      calcul de la liste de courses (logique métier)
   auth.ts               comptes, mots de passe et sessions
 client/                 compilé par tsc vers public/js/
   app.ts                point d'entrée de l'interface
   api.ts                appels à l'API
-  vues/                 écrans (stock, produit, courses, comptes)
-commun/
+  views/                écrans (stock, produit, courses, comptes)
+shared/
   types.ts              types partagés entre serveur et interface
 public/                 servi tel quel par le serveur
   index.html
   style.css
   manifest.json
-  icone.png
+  icon.png
   js/                   généré par la compilation, non versionné
 tests/
   *.test.ts
-tsconfig.json           configuration du serveur, des tests et du code commun
+tsconfig.json           configuration du serveur, des tests et du code partagé
 tsconfig.client.json    configuration de l'interface (sortie vers public/js/)
 package.json
 ```
