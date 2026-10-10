@@ -218,7 +218,7 @@ repository.yaml         description du dépôt d'add-ons pour Home Assistant
 Dockerfile              image de l'add-on : Node.js 24, interface déjà compilée, serveur
 .github/workflows/
   ci.yml                vérification des types, compilation et tests
-  release.yml           publication de l'image sur ghcr.io pour chaque étiquette vX.Y.Z
+  release.yml           publication de l'image sur ghcr.io (lancée à la main, ou par une étiquette vX.Y.Z)
 tsconfig.json           configuration du serveur, des tests et du code partagé
 tsconfig.client.json    configuration de l'interface (sortie vers public/js/)
 package.json
@@ -246,7 +246,7 @@ Home Assistant télécharge le dépôt sans identifiants : il doit être **publi
 
 ### Versions
 
-Une version est publiée en créant l'étiquette Git `vX.Y.Z`. La même version figure dans `package.json`, dans `config.yaml` et en tête du journal des versions (`CHANGELOG.md`) : un test le vérifie, et la publication refuse une étiquette qui ne correspond pas. Home Assistant propose la mise à jour dès que la version de `config.yaml` change sur `main` : l'étiquette est donc créée sur le commit qui change la version, pour que l'image soit publiée aussitôt.
+Une version est publiée par le workflow « Release », lancé à la main sur `main` : il publie l'image puis crée l'étiquette Git `vX.Y.Z`. Envoyer soi-même l'étiquette lance aussi la publication. La même version figure dans `package.json`, dans `config.yaml` et en tête du journal des versions (`CHANGELOG.md`) : un test le vérifie, et la publication refuse une étiquette qui ne correspond pas. Home Assistant propose la mise à jour dès que la version de `config.yaml` change sur `main` : la publication est donc lancée juste après la fusion du commit qui change la version.
 
 ### Fonctionnement de l'add-on
 

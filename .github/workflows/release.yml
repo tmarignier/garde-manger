@@ -1,18 +1,55 @@
 name: Release
 
-# Publishes the add-on image for each version tag (vX.Y.Z). Home Assistant
-# then offers the update, as the version in config.yaml changes in the same commit.
+# Publishes the add-on image for a version, either when a vX.Y.Z tag is pushed
+# or when the workflow is run by hand on main ("Run workflow" in the Actions
+# tab). Run by hand, it takes the version from package.json and creates the tag
+# once the images are published. Home Assistant offers the update as soon as the
+# version in config.yaml changes on main.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
-  image:
+  version:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+      - name: Check that the tag matches the add-on version
+        id: version
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            if [ "$GITHUB_REF_NAME" != main ]; then
+              echo "Run the release on main, not $GITHUB_REF_NAME" >&2
+              exit 1
+            fi
+            tag="v$(node -p "require('./package.json').version")"
+            if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+              echo "$tag is already released: change the version first" >&2
+              exit 1
+            fi
+          else
+            tag="$GITHUB_REF_NAME"
+          fi
+          node scripts/check-version.ts "$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+  image:
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         include:
@@ -26,11 +63,6 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - name: Check that the tag matches the add-on version
-        id: version
-        run: |
-          node scripts/check-version.ts "$GITHUB_REF_NAME"
-          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
@@ -47,7 +79,21 @@ jobs:
           platforms: ${{ matrix.platform }}
           provenance: false
           build-args: |
-            BUILD_VERSION=${{ steps.version.outputs.version }}
+            BUILD_VERSION=${{ needs.version.outputs.version }}
             BUILD_ARCH=${{ matrix.arch }}
-          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-garde-manger:${{ steps.version.outputs.version }}
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-garde-manger:${{ needs.version.outputs.version }}
           push: true
+
+  # Only when run by hand: a pushed tag already exists. A tag pushed with
+  # GITHUB_TOKEN does not start this workflow again.
+  tag:
+    needs: [version, image]
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          git tag "${{ needs.version.outputs.tag }}" "$GITHUB_SHA"
+          git push origin "${{ needs.version.outputs.tag }}"
