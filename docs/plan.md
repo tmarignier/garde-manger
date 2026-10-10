@@ -53,14 +53,32 @@ Terminé quand : une vraie séance de courses est faite avec l'application.
 
 ## Étape 5 : installation à la maison
 
-Objectif : l'application tourne en permanence pour toute la famille.
+Objectif : l'application tourne en permanence pour toute la famille, sur le serveur Home Assistant OS de la maison, et s'installe et se met à jour depuis l'interface de Home Assistant.
+
+### Prérequis : pourquoi un add-on et pas une extension HACS
+
+HACS (Home Assistant Community Store) ne distribue que des intégrations Python (`custom_components`), des cartes de tableau de bord, des thèmes, des scripts Python, des modèles et des applications AppDaemon ou NetDaemon. Il n'installe pas d'add-on : il ne peut donc pas lancer un serveur Node.js comme celui de l'application. Une intégration HACS s'exécute dans le processus Python de Home Assistant, où Node.js n'existe pas : en faire une, ce serait réécrire l'application en Python.
+
+L'équivalent le plus proche pour une application comme la nôtre est un **add-on Home Assistant**, distribué par un **dépôt d'add-ons** : on ajoute l'adresse du dépôt GitHub dans la boutique des add-ons de Home Assistant, puis l'installation, le démarrage automatique, les journaux, les sauvegardes et les mises à jour se font depuis l'interface, comme avec HACS. Voir [Hébergement](architecture.md#hébergement) pour le détail.
+
+Conditions à réunir avant de commencer :
+
+- **Dépôt GitHub public.** Home Assistant télécharge le dépôt d'add-ons sans identifiants. Tant que le dépôt reste privé, seule l'installation en add-on local est possible (copie des fichiers dans le dossier `/addons` du serveur, par le partage Samba ou SSH, et mise à jour à la main).
+- **Image publiée** sur le registre de GitHub (`ghcr.io`), en paquet public, pour les architectures `amd64` et `aarch64`.
+- **Accès administrateur** à Home Assistant, pour ajouter le dépôt et installer l'add-on.
+- **Architecture du serveur** connue (Paramètres > Système > Matériel), pour vérifier qu'elle fait partie des images publiées.
+
+### Contenu de l'étape
 
 - Manifeste web et icône pour l'ajout à l'écran d'accueil de l'iPhone.
-- Service `systemd` pour le démarrage automatique sur la machine de la maison.
-- Script de sauvegarde du fichier de base.
-- Guide d'installation (`docs/installation.md`), avec l'accès hors de la maison par VPN.
+- Chemins relatifs dans l'interface (`api/...`, `style.css`, `js/...`) au lieu de chemins absolus, pour fonctionner derrière l'ingress de Home Assistant, qui sert l'application sous un préfixe (`/api/hassio_ingress/<jeton>/`). Le cookie de session est limité à ce préfixe.
+- `Dockerfile` à la racine : image Node.js 24 qui compile l'interface et lance le serveur, avec la base dans `/data/garde-manger.db`.
+- Dépôt d'add-ons : `repository.yaml` à la racine et dossier `home-assistant/garde-manger/` avec `config.yaml` (nom, version, architectures, ingress, port, image), `DOCS.md` (documentation affichée dans Home Assistant), icône et journal des versions.
+- Intégration continue : construction et publication de l'image multi-architecture sur `ghcr.io` à chaque version (étiquette Git `vX.Y.Z`), la version de `config.yaml` suivant celle de l'étiquette.
+- Sauvegarde : les données de l'add-on (`/data`) sont incluses dans les sauvegardes de Home Assistant. Comme la base est en mode WAL, la sauvegarde passe par une copie cohérente (`VACUUM INTO`) faite juste avant (`backup_pre` dans `config.yaml`), ou à défaut par une sauvegarde à froid (`backup: cold`).
+- Guide d'installation (`docs/installation.md`) : ajout du dépôt, installation de l'add-on, premier compte, accès sur iPhone, accès hors de la maison par VPN (add-on Tailscale) et mises à jour.
 
-Terminé quand : chaque membre de la famille a l'application sur son téléphone et l'utilise.
+Terminé quand : l'add-on s'installe depuis la boutique de Home Assistant, redémarre seul avec le serveur, survit à une restauration de sauvegarde, et chaque membre de la famille a l'application sur son téléphone et l'utilise.
 
 ## Après la première version
 
