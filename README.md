@@ -15,11 +15,16 @@ L'application est alors disponible sur <http://localhost:3000>. Les données son
 
 Au premier lancement, l'application demande de créer le premier compte, qui devient administrateur. Il crée ensuite les comptes des autres membres de la famille depuis l'écran « Comptes ».
 
+## Installer à la maison
+
+L'application s'installe comme add-on Home Assistant : voir le [guide d'installation](docs/installation.md).
+
 ## Documentation
 
 - [Vision](docs/vision.md) : pourquoi ce projet, pour qui, et ce qu'il n'est pas.
 - [Fonctionnalités](docs/fonctionnalites.md) : le périmètre de la première version et la suite.
 - [Architecture](docs/architecture.md) : les choix techniques.
 - [Plan de développement](docs/plan.md) : les étapes pour construire la première version.
+- [Installation](docs/installation.md) : l'add-on Home Assistant, l'iPhone, l'accès depuis l'extérieur et les mises à jour.
 
 Les conventions de développement sont dans [CLAUDE.md](CLAUDE.md).

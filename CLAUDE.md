@@ -18,13 +18,19 @@ Application web familiale de gestion des stocks d'épicerie. Avant de coder, lir
 | `npm start` | Compiler l'interface puis lancer le serveur |
 | `npm test` | Lancer les tests (`node --test`) |
 | `npm run typecheck` | Vérifier les types du serveur et de l'interface (`tsc --noEmit`) |
+| `npm run addon:local` | Préparer l'add-on Home Assistant local dans `dist/garde-manger/` |
 
 Avant chaque commit : `npm run typecheck` et `npm test` doivent passer. L'intégration continue (GitHub Actions, `.github/workflows/ci.yml`) les relance, avec la compilation de l'interface, sur chaque pull request et sur `main`.
 
 ## Configuration
 
 - Variables d'environnement : `PORT` (défaut `3000`) et `DATABASE_PATH` (défaut `./data/garde-manger.db`).
-- Les dossiers `data/` et `public/js/` ne sont pas versionnés.
+- Les dossiers `data/`, `public/js/` et `dist/` ne sont pas versionnés.
+- L'interface utilise des chemins relatifs (`api/...`, jamais `/api/...`) pour fonctionner derrière l'ingress de Home Assistant.
+
+## Versions
+
+Une nouvelle version de l'add-on change, dans la même pull request, la version de `package.json` (et `package-lock.json`), de `home-assistant/garde-manger/config.yaml` et ajoute son entrée en tête de `home-assistant/garde-manger/CHANGELOG.md`. Après la fusion, l'étiquette `vX.Y.Z` sur ce commit publie l'image (`.github/workflows/release.yml`).
 
 ## TypeScript
 

@@ -1,0 +1,26 @@
+name: Garde-manger
+version: "1.0.0"
+slug: garde_manger
+description: Les stocks d'épicerie de la maison et la liste de courses
+url: https://github.com/tmarignier/garde-manger
+arch:
+  - amd64
+  - aarch64
+# Built and published by .github/workflows/release.yml; {arch} is replaced by
+# the server's architecture.
+image: ghcr.io/tmarignier/{arch}-garde-manger
+startup: application
+boot: auto
+watchdog: http://[HOST]:[PORT:3000]/api/health
+ingress: true
+ingress_port: 3000
+panel_icon: mdi:fridge-outline
+panel_title: Garde-manger
+ports:
+  3000/tcp: 3000
+ports_description:
+  3000/tcp: Accès direct depuis le réseau local (écran d'accueil de l'iPhone)
+# The SQLite database runs in WAL mode: copying its files while the app writes
+# could save an inconsistent database. Stopping the add-on during the backup
+# closes the database cleanly first.
+backup: cold

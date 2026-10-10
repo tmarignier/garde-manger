@@ -139,14 +139,40 @@ export function readSessionToken(cookieHeader: string | undefined): string | nul
   return null;
 }
 
+export type CookieOptions = {
+  // Secure is only possible when the app is reached over HTTPS; on the home
+  // network it is plain HTTP.
+  secure: boolean;
+  // The path the app is served under: '/' on the direct port, the ingress
+  // prefix behind Home Assistant.
+  path: string;
+};
+
 // Builds the Set-Cookie value for a session token, or one that removes the
-// cookie when token is null. Secure is only possible when the app is reached
-// over HTTPS; on the home network it is plain HTTP.
-export function sessionCookie(token: string | null, secure: boolean): string {
+// cookie when token is null.
+export function sessionCookie(token: string | null, options: CookieOptions): string {
   const maxAge = token === null ? 0 : Math.floor(SESSION_DURATION_MS / 1000);
-  const attributes = [`${SESSION_COOKIE}=${token ?? ''}`, 'Path=/', 'HttpOnly', 'SameSite=Strict', `Max-Age=${maxAge}`];
-  if (secure) {
+  const attributes = [
+    `${SESSION_COOKIE}=${token ?? ''}`,
+    `Path=${options.path}`,
+    'HttpOnly',
+    'SameSite=Strict',
+    `Max-Age=${maxAge}`,
+  ];
+  if (options.secure) {
     attributes.push('Secure');
   }
   return attributes.join('; ');
+}
+
+// Home Assistant's ingress serves the app under a prefix such as
+// /api/hassio_ingress/<token> and gives it in the X-Ingress-Path header. The
+// session cookie is limited to that prefix so that it is not sent to the rest
+// of Home Assistant. Anything that is not a plain path is ignored, so the
+// header cannot add cookie attributes.
+export function cookiePath(ingressPath: string | string[] | undefined): string {
+  if (typeof ingressPath === 'string' && /^\/[A-Za-z0-9._~/-]*$/.test(ingressPath)) {
+    return ingressPath;
+  }
+  return '/';
 }

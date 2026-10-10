@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   SESSION_DURATION_MS,
+  cookiePath,
   createSession,
   deleteSession,
   deleteUserSessions,
@@ -111,10 +112,19 @@ describe('session cookie', () => {
 
   it('is HttpOnly and SameSite, and Secure over HTTPS', () => {
     assert.equal(
-      sessionCookie('abc', false),
+      sessionCookie('abc', { secure: false, path: '/' }),
       `session=abc; Path=/; HttpOnly; SameSite=Strict; Max-Age=${SESSION_DURATION_MS / 1000}`,
     );
-    assert.match(sessionCookie('abc', true), /; Secure$/);
-    assert.match(sessionCookie(null, false), /^session=; .*Max-Age=0/);
+    assert.match(sessionCookie('abc', { secure: true, path: '/' }), /; Secure$/);
+    assert.match(sessionCookie(null, { secure: false, path: '/' }), /^session=; .*Max-Age=0/);
+    assert.match(sessionCookie('abc', { secure: false, path: '/api/hassio_ingress/xyz' }), /; Path=\/api\/hassio_ingress\/xyz;/);
+  });
+
+  it('limits the cookie to the ingress prefix, ignoring anything but a plain path', () => {
+    assert.equal(cookiePath(undefined), '/');
+    assert.equal(cookiePath('/api/hassio_ingress/Ab-1_x'), '/api/hassio_ingress/Ab-1_x');
+    assert.equal(cookiePath('/a; Domain=example.com'), '/');
+    assert.equal(cookiePath('relative'), '/');
+    assert.equal(cookiePath(['/a', '/b']), '/');
   });
 });
