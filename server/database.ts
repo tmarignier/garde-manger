@@ -63,6 +63,11 @@ export const migrations: readonly string[] = [
   UPDATE categories SET name_key = lower(name);
   CREATE UNIQUE INDEX categories_name_key ON categories (name_key);
   `,
+  // Checked items stay on the device until the purchases are validated, so the
+  // database does not keep a checked state.
+  `
+  ALTER TABLE extra_items DROP COLUMN checked;
+  `,
 ];
 
 export function getSchemaVersion(db: DatabaseSync): number {
@@ -110,4 +115,17 @@ export function openDatabase(path: string): DatabaseSync {
   }
   migrate(db);
   return db;
+}
+
+// Runs the function in a transaction: everything is written, or nothing.
+export function transaction<T>(db: DatabaseSync, run: () => T): T {
+  db.exec('BEGIN');
+  try {
+    const result = run();
+    db.exec('COMMIT');
+    return result;
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
 }

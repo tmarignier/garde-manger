@@ -4,11 +4,14 @@ import type {
   CreateUserRequest,
   CredentialsRequest,
   ErrorResponse,
+  ExtraItem,
   HealthResponse,
   Product,
   ProductRequest,
+  PurchasesRequest,
   ResetPasswordRequest,
   SessionResponse,
+  ShoppingListResponse,
   UpdateProductRequest,
   User,
 } from '../shared/types.ts';
@@ -216,4 +219,43 @@ export async function deleteProduct(id: number): Promise<void> {
 
 export async function adjustProduct(id: number, delta: number): Promise<Product> {
   return readProduct(await request('POST', `/api/products/${id}/adjust`, { delta }));
+}
+
+function isExtraItem(value: unknown): value is ExtraItem {
+  return isRecord(value) && typeof value['id'] === 'number' && typeof value['name'] === 'string';
+}
+
+function readShoppingList(data: unknown): ShoppingListResponse {
+  if (
+    !isRecord(data) ||
+    !Array.isArray(data['items']) ||
+    !data['items'].every(
+      (item: unknown) => isRecord(item) && isProduct(item['product']) && typeof item['quantityToBuy'] === 'number',
+    ) ||
+    !Array.isArray(data['extraItems']) ||
+    !data['extraItems'].every(isExtraItem)
+  ) {
+    throw new Error('Unexpected shopping list response');
+  }
+  return { items: data['items'], extraItems: data['extraItems'] };
+}
+
+export async function getShoppingList(): Promise<ShoppingListResponse> {
+  return readShoppingList(await request('GET', '/api/shopping-list'));
+}
+
+export async function validatePurchases(purchases: PurchasesRequest): Promise<ShoppingListResponse> {
+  return readShoppingList(await request('POST', '/api/shopping-list/purchases', purchases));
+}
+
+export async function createExtraItem(name: string): Promise<ExtraItem> {
+  const data = await request('POST', '/api/extra-items', { name });
+  if (!isRecord(data) || !isExtraItem(data['extraItem'])) {
+    throw new Error('Unexpected extra item response');
+  }
+  return data['extraItem'];
+}
+
+export async function deleteExtraItem(id: number): Promise<void> {
+  await request('DELETE', `/api/extra-items/${id}`);
 }

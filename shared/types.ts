@@ -115,3 +115,42 @@ export type UpdateProductRequest = Omit<ProductRequest, 'quantity'> & {
 export type AdjustmentRequest = {
   delta: number;
 };
+
+// A product of the shopping list, with the quantity to buy.
+export type ShoppingListItem = {
+  product: Product;
+  quantityToBuy: number;
+};
+
+// An item added by hand to the shopping list, outside the tracked stock.
+export type ExtraItem = {
+  id: number;
+  name: string;
+};
+
+// GET /api/shopping-list and POST /api/shopping-list/purchases.
+export type ShoppingListResponse = {
+  items: ShoppingListItem[];
+  extraItems: ExtraItem[];
+};
+
+export type Purchase = {
+  productId: number;
+  quantity: number;
+};
+
+// POST /api/shopping-list/purchases: the bought quantities are added to the
+// stock and the bought extra items leave the list.
+export type PurchasesRequest = {
+  purchases: Purchase[];
+  extraItemIds: number[];
+};
+
+// POST /api/extra-items.
+export type CreateExtraItemRequest = {
+  name: string;
+};
+
+export type ExtraItemResponse = {
+  extraItem: ExtraItem;
+};
