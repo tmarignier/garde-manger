@@ -55,11 +55,9 @@ Terminé quand : une vraie séance de courses est faite avec l'application.
 
 Objectif : l'application tourne en permanence pour toute la famille, sur le serveur Home Assistant OS de la maison, et s'installe et se met à jour depuis l'interface de Home Assistant.
 
-### Prérequis : pourquoi un add-on et pas une extension HACS
+### Prérequis
 
-HACS (Home Assistant Community Store) ne distribue que des intégrations Python (`custom_components`), des cartes de tableau de bord, des thèmes, des scripts Python, des modèles et des applications AppDaemon ou NetDaemon. Il n'installe pas d'add-on : il ne peut donc pas lancer un serveur Node.js comme celui de l'application. Une intégration HACS s'exécute dans le processus Python de Home Assistant, où Node.js n'existe pas : en faire une, ce serait réécrire l'application en Python.
-
-L'équivalent le plus proche pour une application comme la nôtre est un **add-on Home Assistant**, distribué par un **dépôt d'add-ons** : on ajoute l'adresse du dépôt GitHub dans la boutique des add-ons de Home Assistant, puis l'installation, le démarrage automatique, les journaux, les sauvegardes et les mises à jour se font depuis l'interface, comme avec HACS. Voir [Hébergement](architecture.md#hébergement) pour le détail.
+L'application est empaquetée en **add-on Home Assistant**, distribué par un **dépôt d'add-ons** : on ajoute l'adresse du dépôt GitHub dans la boutique des add-ons de Home Assistant, puis l'installation, le démarrage automatique, les journaux, les sauvegardes et les mises à jour se font depuis l'interface. Voir [Hébergement](architecture.md#hébergement) pour le détail.
 
 Conditions à réunir avant de commencer :
 

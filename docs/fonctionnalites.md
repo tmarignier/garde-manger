@@ -40,4 +40,3 @@
 - Historique complet des mouvements de stock (qui a ajouté ou retiré quoi, et quand).
 - Mises à jour en temps réel entre les appareils.
 - Fonctionnement hors connexion.
-- Intégration HACS en complément de l'add-on, pour voir la liste de courses dans Home Assistant (tableau de bord, notifications).

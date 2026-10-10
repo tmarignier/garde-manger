@@ -226,17 +226,15 @@ La logique métier (calcul de la liste de courses, variations de quantité) est 
 
 Le serveur tourne sur **la machine de la maison**, allumée en permanence, qui fait tourner **Home Assistant OS**. Ce système ne permet pas d'installer Node.js ni un service `systemd` directement : les applications y tournent sous forme d'**add-ons**, des conteneurs gérés par Home Assistant.
 
-### Add-on Home Assistant plutôt qu'extension HACS
+### Dépôt d'add-ons
 
-HACS (Home Assistant Community Store) distribue des intégrations Python, des cartes de tableau de bord, des thèmes, des scripts et des applications AppDaemon ou NetDaemon, qui s'exécutent tous dans Home Assistant lui-même. Il ne sait pas installer d'add-on, et donc pas un serveur Node.js. L'application est donc empaquetée en **add-on**, et le dépôt GitHub sert aussi de **dépôt d'add-ons** :
+L'application est empaquetée en **add-on**, et le dépôt GitHub sert aussi de **dépôt d'add-ons** :
 
 - dans Home Assistant, Paramètres > Modules complémentaires > Boutique > menu ⋮ > Dépôts, on ajoute `https://github.com/tmarignier/garde-manger` ;
-- l'add-on « Garde-manger » apparaît dans la boutique : installation, démarrage automatique, journaux et mises à jour se font depuis l'interface, comme pour une extension HACS ;
+- l'add-on « Garde-manger » apparaît dans la boutique : installation, démarrage automatique, journaux et mises à jour se font depuis l'interface ;
 - l'image du conteneur est construite par l'intégration continue et publiée sur `ghcr.io` pour `amd64` et `aarch64` : le serveur la télécharge au lieu de la compiler.
 
 Home Assistant télécharge le dépôt sans identifiants : il doit être **public**. Tant qu'il est privé, l'add-on s'installe en **add-on local**, en copiant ses fichiers dans le dossier `/addons` du serveur (partage Samba ou SSH) ; il est alors construit sur place et mis à jour à la main.
-
-Une intégration HACS reste possible plus tard, en complément de l'add-on : par exemple pour afficher dans Home Assistant le nombre d'articles de la liste de courses. Elle appellerait l'API de l'add-on et serait écrite en Python, dans un dépôt séparé.
 
 ### Fonctionnement de l'add-on
 
