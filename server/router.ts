@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import type { User } from '../shared/types.ts';
+import type { CookieOptions } from './auth.ts';
 import { HttpError } from './http.ts';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -14,8 +15,8 @@ export type RouteContext = {
   // The logged-in user, always set for 'user' and 'admin' routes.
   user: User | null;
   sessionToken: string | null;
-  // Whether the request reached the app over HTTPS, to mark cookies Secure.
-  secure: boolean;
+  // How to set the session cookie for this request.
+  cookie: CookieOptions;
 };
 
 export type RouteResult = {

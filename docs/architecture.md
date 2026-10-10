@@ -30,9 +30,9 @@ Sur iPhone, l'application peut être ajoutée à l'écran d'accueil (« Sur l'é
 | Langage | TypeScript, en mode strict | Les erreurs de types sont détectées avant l'exécution, et les types sont partagés entre serveur et interface. |
 | Interface | HTML, CSS et TypeScript, sans framework | Fonctionne dans tous les navigateurs, facile à lire. Le TypeScript est compilé en JavaScript par `tsc`. |
 | Mise en page | CSS responsive, pensée d'abord pour le mobile | Une seule interface pour l'iPhone et l'ordinateur. |
-| Installation sur iPhone | Manifeste web (`manifest.json`) et icône | Ajout à l'écran d'accueil et ouverture en plein écran. |
+| Installation sur iPhone | Manifeste web (`manifest.webmanifest`) et icônes | Ajout à l'écran d'accueil et ouverture en plein écran. |
 | Serveur | Node.js 24 (LTS), module intégré `node:http` | Node.js exécute directement les fichiers `.ts` (suppression des types intégrée) : pas d'étape de compilation pour le serveur. |
-| Base de données | SQLite via le module intégré `node:sqlite` | Un seul fichier, rien à installer ni administrer. La base est en mode WAL : la sauvegarde passe par `VACUUM INTO`, pas par une simple copie du fichier. |
+| Base de données | SQLite via le module intégré `node:sqlite` | Un seul fichier, rien à installer ni administrer. La base est en mode WAL : on ne la copie pas pendant que l'application écrit (voir [Fonctionnement de l'add-on](#fonctionnement-de-ladd-on)). |
 | Tests | Lanceur de tests intégré `node:test`, tests écrits en TypeScript | Aucun outil supplémentaire. |
 | Vérification des types | `tsc --noEmit` | Node.js retire les types sans les vérifier : `tsc` s'en charge. |
 | Installation | Add-on Home Assistant, distribué par un dépôt d'add-ons | Le serveur de la maison tourne sous Home Assistant OS. Voir [Hébergement](#hébergement). |
@@ -91,6 +91,7 @@ Une gestion d'utilisateurs basique : chaque membre de la famille a son propre co
 - L'administrateur ne peut pas supprimer son propre compte : il reste toujours au moins un administrateur.
 - Les requêtes de l'API qui envoient des données doivent les déclarer en JSON (`Content-Type: application/json`), sinon elles sont refusées (415). Avec `SameSite=Strict`, cela empêche un autre site d'agir sur l'application avec la session d'un membre de la famille.
 - À la maison, l'application est servie en HTTP simple : le cookie ne peut pas être marqué `Secure`. Il l'est automatiquement quand un proxy HTTPS place devant l'application l'en-tête `X-Forwarded-Proto: https`.
+- Derrière l'ingress de Home Assistant, le cookie est limité au préfixe de l'add-on, donné par l'en-tête `X-Ingress-Path` : il n'est pas envoyé au reste de Home Assistant. Une valeur qui n'est pas un simple chemin est ignorée.
 - Pas de récupération de mot de passe par e-mail : l'administrateur le réinitialise.
 
 ## Utilisation à plusieurs
@@ -198,11 +199,13 @@ shared/
 public/                 servi tel quel par le serveur
   index.html
   style.css
-  manifest.json
-  icon.png
+  manifest.webmanifest  manifeste pour l'ajout à l'écran d'accueil
+  apple-touch-icon.png, icon-192.png, icon-512.png
   js/                   généré par la compilation, non versionné
 scripts/
   dev.ts                mode développement (compilation et serveur en continu)
+  check-version.ts      cohérence des versions (package.json, config.yaml, journal, étiquette)
+  local-addon.ts        préparation de l'add-on local dans dist/garde-manger/
 tests/
   *.test.ts
 home-assistant/         add-on Home Assistant (étape 5)
@@ -212,7 +215,10 @@ home-assistant/         add-on Home Assistant (étape 5)
     CHANGELOG.md        journal des versions
     icon.png
 repository.yaml         description du dépôt d'add-ons pour Home Assistant
-Dockerfile              image de l'add-on : Node.js 24, interface compilée, serveur
+Dockerfile              image de l'add-on : Node.js 24, interface déjà compilée, serveur
+.github/workflows/
+  ci.yml                vérification des types, compilation et tests
+  release.yml           publication de l'image sur ghcr.io pour chaque étiquette vX.Y.Z
 tsconfig.json           configuration du serveur, des tests et du code partagé
 tsconfig.client.json    configuration de l'interface (sortie vers public/js/)
 package.json
@@ -232,17 +238,24 @@ L'application est empaquetée en **add-on**, et le dépôt GitHub sert aussi de 
 
 - dans Home Assistant, Paramètres > Modules complémentaires > Boutique > menu ⋮ > Dépôts, on ajoute `https://github.com/tmarignier/garde-manger` ;
 - l'add-on « Garde-manger » apparaît dans la boutique : installation, démarrage automatique, journaux et mises à jour se font depuis l'interface ;
-- l'image du conteneur est construite par l'intégration continue et publiée sur `ghcr.io` pour `amd64` et `aarch64` : le serveur la télécharge au lieu de la compiler.
+- l'image du conteneur est construite par l'intégration continue et publiée sur `ghcr.io` pour `amd64` et `aarch64` (`ghcr.io/tmarignier/{arch}-garde-manger`) : le serveur la télécharge au lieu de la compiler.
 
-Home Assistant télécharge le dépôt sans identifiants : il doit être **public**. Tant qu'il est privé, l'add-on s'installe en **add-on local**, en copiant ses fichiers dans le dossier `/addons` du serveur (partage Samba ou SSH) ; il est alors construit sur place et mis à jour à la main.
+L'image ne contient que Node.js et les fichiers de l'application : l'interface est compilée avant la construction (`npm run build`), et aucune commande n'est exécutée dans l'image. Elle se construit donc pour `aarch64` sans émulation.
+
+Home Assistant télécharge le dépôt sans identifiants : il doit être **public**. Tant qu'il est privé, l'add-on s'installe en **add-on local** : `npm run addon:local` prépare le dossier `dist/garde-manger/`, qu'on copie dans le dossier `/addons` du serveur (partage Samba ou SSH) ; Home Assistant le construit sur place, et il se met à jour à la main.
+
+### Versions
+
+Une version est publiée en créant l'étiquette Git `vX.Y.Z`. La même version figure dans `package.json`, dans `config.yaml` et en tête du journal des versions (`CHANGELOG.md`) : un test le vérifie, et la publication refuse une étiquette qui ne correspond pas. Home Assistant propose la mise à jour dès que la version de `config.yaml` change sur `main` : l'étiquette est donc créée sur le commit qui change la version, pour que l'image soit publiée aussitôt.
 
 ### Fonctionnement de l'add-on
 
 - **Démarrage automatique** : Home Assistant démarre l'add-on avec le serveur et le relance s'il s'arrête (option « Chien de garde »).
 - **Données** : la base est dans le dossier persistant de l'add-on (`DATABASE_PATH=/data/garde-manger.db`), conservé lors des mises à jour.
-- **Ingress** : l'application s'ouvre dans le menu latéral de Home Assistant, sans port à ouvrir, derrière la connexion de Home Assistant. L'ingress sert l'application sous un préfixe (`/api/hassio_ingress/<jeton>/`) : l'interface utilise donc des chemins relatifs, et le cookie de session est limité à ce préfixe.
+- **Ingress** : l'application s'ouvre dans le menu latéral de Home Assistant, sans port à ouvrir, derrière la connexion de Home Assistant. L'ingress sert l'application sous un préfixe (`/api/hassio_ingress/<jeton>/`) : l'interface utilise donc des chemins relatifs (`api/...`, `style.css`), et le cookie de session est limité à ce préfixe (en-tête `X-Ingress-Path`).
 - **Port direct** : l'add-on expose aussi le port `3000` sur le réseau local (par exemple `http://homeassistant.local:3000`), pour ajouter l'application à l'écran d'accueil de l'iPhone sans passer par l'application Home Assistant. Les comptes de l'application restent nécessaires dans les deux cas.
-- **Sauvegarde** : le dossier `/data` est inclus dans les sauvegardes de Home Assistant, qu'on peut envoyer vers un autre support (NAS, cloud). La base étant en mode WAL, une copie cohérente est faite avec `VACUUM INTO` juste avant la sauvegarde (`backup_pre`), ou l'add-on est arrêté pendant la sauvegarde (`backup: cold`).
+- **Sauvegarde** : le dossier `/data` est inclus dans les sauvegardes de Home Assistant, qu'on peut envoyer vers un autre support (NAS, cloud). La base étant en mode WAL, copier ses fichiers pendant une écriture pourrait sauvegarder une base incohérente. L'add-on est donc **arrêté pendant la sauvegarde** (`backup: cold`) : à l'arrêt, le serveur ferme la base, SQLite reporte le journal WAL dans le fichier principal, et la sauvegarde copie une base complète et fermée. L'application est indisponible quelques secondes, puis Home Assistant la redémarre.
+  - Une sauvegarde à chaud (`backup_pre` qui ferait une copie avec `VACUUM INTO`) a été écartée : Home Assistant ne lance pas cette commande quand l'add-on est arrêté, et la restauration devrait choisir entre la base et sa copie. Pour une application familiale, quelques secondes d'arrêt pendant la sauvegarde nocturne ne gênent pas.
 
 ### Accès
 

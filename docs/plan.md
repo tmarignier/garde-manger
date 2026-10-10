@@ -70,10 +70,11 @@ Conditions à réunir avant de commencer :
 
 - Manifeste web et icône pour l'ajout à l'écran d'accueil de l'iPhone.
 - Chemins relatifs dans l'interface (`api/...`, `style.css`, `js/...`) au lieu de chemins absolus, pour fonctionner derrière l'ingress de Home Assistant, qui sert l'application sous un préfixe (`/api/hassio_ingress/<jeton>/`). Le cookie de session est limité à ce préfixe.
-- `Dockerfile` à la racine : image Node.js 24 qui compile l'interface et lance le serveur, avec la base dans `/data/garde-manger.db`.
+- `Dockerfile` à la racine : image Node.js 24 qui reçoit l'interface déjà compilée et lance le serveur, avec la base dans `/data/garde-manger.db`.
 - Dépôt d'add-ons : `repository.yaml` à la racine et dossier `home-assistant/garde-manger/` avec `config.yaml` (nom, version, architectures, ingress, port, image), `DOCS.md` (documentation affichée dans Home Assistant), icône et journal des versions.
-- Intégration continue : construction et publication de l'image multi-architecture sur `ghcr.io` à chaque version (étiquette Git `vX.Y.Z`), la version de `config.yaml` suivant celle de l'étiquette.
-- Sauvegarde : les données de l'add-on (`/data`) sont incluses dans les sauvegardes de Home Assistant. Comme la base est en mode WAL, la sauvegarde passe par une copie cohérente (`VACUUM INTO`) faite juste avant (`backup_pre` dans `config.yaml`), ou à défaut par une sauvegarde à froid (`backup: cold`).
+- Intégration continue : construction et publication de l'image sur `ghcr.io` pour chaque architecture à chaque version (étiquette Git `vX.Y.Z`), la version de `config.yaml` suivant celle de l'étiquette.
+- Add-on local (`npm run addon:local`) tant que le dépôt est privé.
+- Sauvegarde : les données de l'add-on (`/data`) sont incluses dans les sauvegardes de Home Assistant. Comme la base est en mode WAL, la sauvegarde se fait à froid (`backup: cold`) : l'add-on s'arrête quelques secondes, la base est fermée proprement puis copiée. Voir [Fonctionnement de l'add-on](architecture.md#fonctionnement-de-ladd-on) pour la sauvegarde à chaud écartée.
 - Guide d'installation (`docs/installation.md`) : ajout du dépôt, installation de l'add-on, premier compte, accès sur iPhone, accès hors de la maison par VPN (add-on Tailscale) et mises à jour.
 
 Terminé quand : l'add-on s'installe depuis la boutique de Home Assistant, redémarre seul avec le serveur, survit à une restauration de sauvegarde, et chaque membre de la famille a l'application sur son téléphone et l'utilise.

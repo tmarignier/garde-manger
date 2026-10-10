@@ -208,4 +208,19 @@ describe('accounts API', () => {
     });
     assert.match(response.headers.get('set-cookie') ?? '', /; Secure$/);
   });
+
+  it('limits the cookie to the Home Assistant ingress prefix', async () => {
+    const setup = await fetch(`${baseUrl}/api/setup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Ingress-Path': '/api/hassio_ingress/abc123' },
+      body: JSON.stringify({ name: 'Thibault', password: 'admin-password' }),
+    });
+    assert.match(setup.headers.get('set-cookie') ?? '', /; Path=\/api\/hassio_ingress\/abc123;/);
+
+    const logout = await fetch(`${baseUrl}/api/logout`, {
+      method: 'POST',
+      headers: { 'X-Ingress-Path': '/api/hassio_ingress/abc123' },
+    });
+    assert.match(logout.headers.get('set-cookie') ?? '', /; Path=\/api\/hassio_ingress\/abc123;.*Max-Age=0/);
+  });
 });

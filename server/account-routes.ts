@@ -56,7 +56,7 @@ function logIn(context: RouteContext, user: User): RouteResult {
   }
   const token = createSession(context.db, user.id);
   const body: UserResponse = { user };
-  return ok(body, { 'Set-Cookie': sessionCookie(token, context.secure) });
+  return ok(body, { 'Set-Cookie': sessionCookie(token, context.cookie) });
 }
 
 // Inserts the first account, as admin, unless an account already exists. The
@@ -118,11 +118,11 @@ export const accountRoutes: readonly Route[] = [
     method: 'POST',
     path: '/api/logout',
     access: 'public',
-    handler: ({ db, sessionToken, secure }) => {
+    handler: ({ db, sessionToken, cookie }) => {
       if (sessionToken !== null) {
         deleteSession(db, sessionToken);
       }
-      return { status: 204, body: undefined, headers: { 'Set-Cookie': sessionCookie(null, secure) } };
+      return { status: 204, body: undefined, headers: { 'Set-Cookie': sessionCookie(null, cookie) } };
     },
   },
   {

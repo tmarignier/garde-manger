@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { DatabaseSync } from 'node:sqlite';
-import { findSession, readSessionToken, sessionCookie } from './auth.ts';
+import { cookiePath, findSession, readSessionToken, sessionCookie } from './auth.ts';
 import { HttpError, hasBody, isJsonRequest, readJson, sendError, sendJson } from './http.ts';
 import { findRoute } from './router.ts';
 import type { Route } from './router.ts';
@@ -66,7 +66,10 @@ async function handleApiRequest(
     }
 
     const { route, params } = match;
-    const secure = req.headers['x-forwarded-proto'] === 'https';
+    const cookie = {
+      secure: req.headers['x-forwarded-proto'] === 'https',
+      path: cookiePath(req.headers['x-ingress-path']),
+    };
     const sessionToken = readSessionToken(req.headers.cookie);
     const session = sessionToken === null ? null : findSession(options.db, sessionToken);
     const access = route.access ?? 'user';
@@ -89,12 +92,12 @@ async function handleApiRequest(
       body,
       user: session?.user ?? null,
       sessionToken: session === null ? null : sessionToken,
-      secure,
+      cookie,
     });
 
     const headers: Record<string, string> = {};
     if (session?.renewed === true && sessionToken !== null) {
-      headers['Set-Cookie'] = sessionCookie(sessionToken, secure);
+      headers['Set-Cookie'] = sessionCookie(sessionToken, cookie);
     }
     Object.assign(headers, result.headers);
     if (result.status === 204) {
