@@ -32,9 +32,10 @@ Sur iPhone, l'application peut être ajoutée à l'écran d'accueil (« Sur l'é
 | Mise en page | CSS responsive, pensée d'abord pour le mobile | Une seule interface pour l'iPhone et l'ordinateur. |
 | Installation sur iPhone | Manifeste web (`manifest.json`) et icône | Ajout à l'écran d'accueil et ouverture en plein écran. |
 | Serveur | Node.js 24 (LTS), module intégré `node:http` | Node.js exécute directement les fichiers `.ts` (suppression des types intégrée) : pas d'étape de compilation pour le serveur. |
-| Base de données | SQLite via le module intégré `node:sqlite` | Un seul fichier, rien à installer ni administrer, sauvegarde par simple copie. |
+| Base de données | SQLite via le module intégré `node:sqlite` | Un seul fichier, rien à installer ni administrer. La base est en mode WAL : la sauvegarde passe par `VACUUM INTO`, pas par une simple copie du fichier. |
 | Tests | Lanceur de tests intégré `node:test`, tests écrits en TypeScript | Aucun outil supplémentaire. |
 | Vérification des types | `tsc --noEmit` | Node.js retire les types sans les vérifier : `tsc` s'en charge. |
+| Installation | Add-on Home Assistant, distribué par un dépôt d'add-ons | Le serveur de la maison tourne sous Home Assistant OS. Voir [Hébergement](#hébergement). |
 
 Au démarrage, le projet n'a donc **aucune dépendance d'exécution** : seules deux dépendances de développement sont nécessaires (voir ci-dessous).
 
@@ -204,6 +205,14 @@ scripts/
   dev.ts                mode développement (compilation et serveur en continu)
 tests/
   *.test.ts
+home-assistant/         add-on Home Assistant (étape 5)
+  garde-manger/
+    config.yaml         description de l'add-on : version, architectures, ingress, port, image
+    DOCS.md             documentation affichée dans Home Assistant
+    CHANGELOG.md        journal des versions
+    icon.png
+repository.yaml         description du dépôt d'add-ons pour Home Assistant
+Dockerfile              image de l'add-on : Node.js 24, interface compilée, serveur
 tsconfig.json           configuration du serveur, des tests et du code partagé
 tsconfig.client.json    configuration de l'interface (sortie vers public/js/)
 package.json
@@ -215,11 +224,29 @@ La logique métier (calcul de la liste de courses, variations de quantité) est 
 
 ## Hébergement
 
-Le serveur tourne sur **une machine de la maison** allumée en permanence : un Raspberry Pi, un NAS capable de lancer Node.js ou un vieil ordinateur.
+Le serveur tourne sur **la machine de la maison**, allumée en permanence, qui fait tourner **Home Assistant OS**. Ce système ne permet pas d'installer Node.js ni un service `systemd` directement : les applications y tournent sous forme d'**add-ons**, des conteneurs gérés par Home Assistant.
 
-- **À la maison** : on accède à l'application depuis le réseau Wi-Fi, avec l'adresse de la machine (par exemple `http://garde-manger.local:3000`). Il faut donner à la machine une adresse fixe sur le réseau local, via la box.
-- **Hors de la maison** (pour consulter la liste au magasin) : la solution recommandée est un **VPN** comme Tailscale ou WireGuard, installé sur la machine et sur les téléphones. L'application reste invisible depuis Internet, sans ouvrir de port sur la box. Tailscale peut en plus fournir un certificat HTTPS.
-- **Démarrage automatique** : le serveur est lancé comme service système (par exemple avec `systemd`), pour redémarrer tout seul après une coupure.
-- **Sauvegarde** : copie régulière du fichier `garde-manger.db` vers un autre support (disque externe, NAS, cloud).
+### Dépôt d'add-ons
+
+L'application est empaquetée en **add-on**, et le dépôt GitHub sert aussi de **dépôt d'add-ons** :
+
+- dans Home Assistant, Paramètres > Modules complémentaires > Boutique > menu ⋮ > Dépôts, on ajoute `https://github.com/tmarignier/garde-manger` ;
+- l'add-on « Garde-manger » apparaît dans la boutique : installation, démarrage automatique, journaux et mises à jour se font depuis l'interface ;
+- l'image du conteneur est construite par l'intégration continue et publiée sur `ghcr.io` pour `amd64` et `aarch64` : le serveur la télécharge au lieu de la compiler.
+
+Home Assistant télécharge le dépôt sans identifiants : il doit être **public**. Tant qu'il est privé, l'add-on s'installe en **add-on local**, en copiant ses fichiers dans le dossier `/addons` du serveur (partage Samba ou SSH) ; il est alors construit sur place et mis à jour à la main.
+
+### Fonctionnement de l'add-on
+
+- **Démarrage automatique** : Home Assistant démarre l'add-on avec le serveur et le relance s'il s'arrête (option « Chien de garde »).
+- **Données** : la base est dans le dossier persistant de l'add-on (`DATABASE_PATH=/data/garde-manger.db`), conservé lors des mises à jour.
+- **Ingress** : l'application s'ouvre dans le menu latéral de Home Assistant, sans port à ouvrir, derrière la connexion de Home Assistant. L'ingress sert l'application sous un préfixe (`/api/hassio_ingress/<jeton>/`) : l'interface utilise donc des chemins relatifs, et le cookie de session est limité à ce préfixe.
+- **Port direct** : l'add-on expose aussi le port `3000` sur le réseau local (par exemple `http://homeassistant.local:3000`), pour ajouter l'application à l'écran d'accueil de l'iPhone sans passer par l'application Home Assistant. Les comptes de l'application restent nécessaires dans les deux cas.
+- **Sauvegarde** : le dossier `/data` est inclus dans les sauvegardes de Home Assistant, qu'on peut envoyer vers un autre support (NAS, cloud). La base étant en mode WAL, une copie cohérente est faite avec `VACUUM INTO` juste avant la sauvegarde (`backup_pre`), ou l'add-on est arrêté pendant la sauvegarde (`backup: cold`).
+
+### Accès
+
+- **À la maison** : depuis le réseau Wi-Fi, par Home Assistant ou par le port direct. Il faut donner au serveur une adresse fixe sur le réseau local, via la box.
+- **Hors de la maison** (pour consulter la liste au magasin) : la solution recommandée est un **VPN**, avec l'add-on Tailscale de Home Assistant et l'application Tailscale sur les téléphones. L'application reste invisible depuis Internet, sans ouvrir de port sur la box. Si Home Assistant est déjà accessible de l'extérieur (Home Assistant Cloud par exemple), l'ingress permet aussi d'y accéder par l'application Home Assistant.
 
 L'accès depuis Internet sans VPN (ouverture de port et HTTPS) est déconseillé : il expose l'application et demande plus de maintenance.
