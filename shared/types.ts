@@ -68,8 +68,8 @@ export type CategoriesResponse = {
   categories: Category[];
 };
 
-// POST /api/categories.
-export type CreateCategoryRequest = {
+// POST /api/categories and PUT /api/categories/:id.
+export type CategoryRequest = {
   name: string;
 };
 

@@ -80,6 +80,36 @@ describe('products API', () => {
     assert.equal((await admin.request('POST', '/api/categories', { name: '  ' })).status, 400);
   });
 
+  it('renames a category for all its products', async () => {
+    const category = await createCategory(admin, 'Epicerie');
+    const drinks = await createCategory(admin, 'Boissons');
+    const product = await createProduct(admin, { categoryId: category.id });
+
+    const renamed = await member.request('PUT', `/api/categories/${category.id}`, { name: ' Épicerie salée ' });
+    assert.equal(renamed.status, 200);
+    assert.deepEqual((renamed.body as { category: Category }).category, {
+      id: category.id,
+      name: 'Épicerie salée',
+      position: 0,
+    });
+    const products = (await admin.request('GET', '/api/products')).body as { products: Product[] };
+    assert.equal(products.products.find((existing) => existing.id === product.id)?.categoryId, category.id);
+    const list = (await admin.request('GET', '/api/categories')).body as { categories: Category[] };
+    assert.deepEqual(
+      list.categories.map((existing) => existing.name),
+      ['Épicerie salée', 'Boissons'],
+    );
+
+    // Changing only the case is not a duplicate of itself.
+    assert.equal((await admin.request('PUT', `/api/categories/${category.id}`, { name: 'ÉPICERIE SALÉE' })).status, 200);
+    assert.equal((await admin.request('PUT', `/api/categories/${drinks.id}`, { name: 'épicerie salée' })).status, 409);
+    assert.equal((await admin.request('PUT', `/api/categories/${drinks.id}`, { name: ' ' })).status, 400);
+    assert.equal((await admin.request('PUT', '/api/categories/999', { name: 'Hygiène' })).status, 404);
+    assert.equal((await admin.request('PUT', '/api/categories/abc', { name: 'Hygiène' })).status, 404);
+    const anonymous = new Device(admin.baseUrl);
+    assert.equal((await anonymous.request('PUT', `/api/categories/${drinks.id}`, { name: 'Hygiène' })).status, 401);
+  });
+
   it('adds a product and records who added it', async () => {
     const category = await createCategory(admin, 'Épicerie salée');
     const created = await createProduct(member, {

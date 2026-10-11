@@ -28,6 +28,7 @@ import {
   insertProduct,
   listCategories,
   listProducts,
+  renameCategory,
   updateProduct,
   updateQuantity,
 } from './products.ts';
@@ -76,12 +77,16 @@ function readProductRequest(db: DatabaseSync, rawBody: unknown): UpdateProductRe
   return product;
 }
 
-function readProductId(params: Record<string, string>): number {
+function readId(params: Record<string, string>, notFound: string): number {
   const id = Number(params['id']);
   if (!Number.isSafeInteger(id) || id <= 0) {
-    throw new HttpError(404, 'Product not found');
+    throw new HttpError(404, notFound);
   }
   return id;
+}
+
+function readProductId(params: Record<string, string>): number {
+  return readId(params, 'Product not found');
 }
 
 function productResponse(db: DatabaseSync, id: number): ProductResponse {
@@ -111,6 +116,23 @@ export const productRoutes: readonly Route[] = [
       }
       const response: CategoryResponse = { category: insertCategory(db, name) };
       return created(response);
+    },
+  },
+  {
+    method: 'PUT',
+    path: '/api/categories/:id',
+    handler: ({ db, params, body }) => {
+      const id = readId(params, 'Category not found');
+      const name = readText(readObject(body), 'name', CATEGORY_NAME_MAX_LENGTH);
+      if (categoryNameExists(db, name, id)) {
+        throw new HttpError(409, 'Category already exists');
+      }
+      const category = renameCategory(db, id, name);
+      if (category === null) {
+        throw new HttpError(404, 'Category not found');
+      }
+      const response: CategoryResponse = { category };
+      return ok(response);
     },
   },
   {

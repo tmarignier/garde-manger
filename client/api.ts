@@ -199,6 +199,14 @@ export async function createCategory(name: string): Promise<Category> {
   return data['category'];
 }
 
+export async function renameCategory(id: number, name: string): Promise<Category> {
+  const data = await request('PUT', `api/categories/${id}`, { name });
+  if (!isRecord(data) || !isCategory(data['category'])) {
+    throw new Error('Unexpected category response');
+  }
+  return data['category'];
+}
+
 export async function listProducts(): Promise<Product[]> {
   const data = await request('GET', 'api/products');
   if (!isRecord(data) || !Array.isArray(data['products']) || !data['products'].every(isProduct)) {

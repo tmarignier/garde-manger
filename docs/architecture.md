@@ -163,6 +163,7 @@ Les tables sont déclarées `STRICT` (SQLite vérifie le type de chaque valeur) 
 | `POST` | `/api/extra-items` | Ajouter un article ponctuel (`{ "name": "Bougies" }`) |
 | `DELETE` | `/api/extra-items/:id` | Retirer un article ponctuel |
 | `GET` / `POST` | `/api/categories` | Lister ou ajouter des catégories |
+| `PUT` | `/api/categories/:id` | Renommer une catégorie (`{ "name": "Épicerie salée" }`) ; 409 si une autre catégorie porte déjà ce nom |
 
 Toutes les routes exigent une session valide, sauf celles marquées « sans connexion » : sinon le serveur répond 401. Les routes des comptes (`/api/users`) sont réservées aux administrateurs (403 pour les autres). Chaque route déclare son niveau d'accès (`access` dans `server/router.ts` : `public`, `user` par défaut, ou `admin`), et le serveur le vérifie avant d'appeler la route.
 

@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 1.2.0
+
+- Renommer une catégorie, depuis la section « Catégories » en bas du stock.
+
 ## 1.1.0
 
 - Filtre par catégorie dans le stock et dans la liste de courses.

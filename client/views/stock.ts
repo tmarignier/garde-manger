@@ -6,6 +6,7 @@ import {
   errorMessage,
   listCategories,
   listProducts,
+  renameCategory,
   updateProduct,
 } from '../api.ts';
 import { nameKey } from '../../shared/accounts.ts';
@@ -53,7 +54,7 @@ function quantityInput(name: string, value: number | null, required: boolean): H
 }
 
 // The stock screen: products grouped by category, search, quick + and − buttons,
-// and the forms to add, edit and delete products and to add categories.
+// and the forms to add, edit and delete products and to add and rename categories.
 export function stockView(): HTMLElement {
   let products: Product[] = [];
   let categories: Category[] = [];
@@ -117,7 +118,65 @@ export function stockView(): HTMLElement {
         ),
       );
     }
-    categoryList.replaceChildren(...categories.map((category) => h('li', {}, category.name)));
+    categoryList.replaceChildren(...categories.map(categoryItem));
+  }
+
+  // A category of the list, with a button that opens the form to rename it.
+  function categoryItem(category: Category): HTMLLIElement {
+    const renameButton = h(
+      'button',
+      { type: 'button', class: 'link', 'aria-label': `Renommer la catégorie ${category.name}` },
+      'Renommer',
+    );
+    const row = h('div', { class: 'category-row' }, h('span', {}, category.name), renameButton);
+    const item = h('li', {}, row);
+    renameButton.addEventListener('click', () => {
+      const form = renameForm(category, () => form.replaceWith(row));
+      row.replaceWith(form);
+      form.querySelector('input')?.select();
+    });
+    return item;
+  }
+
+  function renameForm(category: Category, close: () => void): HTMLFormElement {
+    const name = h('input', {
+      type: 'text',
+      name: 'category-name',
+      required: true,
+      maxlength: String(CATEGORY_NAME_MAX_LENGTH),
+      autocomplete: 'off',
+      autocapitalize: 'sentences',
+      value: category.name,
+    });
+    const cancel = h('button', { type: 'button', class: 'secondary' }, 'Annuler');
+    const formMessage = messageLine();
+    const form = h(
+      'form',
+      { class: 'inline-form' },
+      field('Nouveau nom', name),
+      h('div', { class: 'actions' }, h('button', { type: 'submit' }, 'Enregistrer'), cancel),
+      formMessage.element,
+    );
+    cancel.addEventListener('click', close);
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      void whileSubmitting(form, async () => {
+        try {
+          const renamed = await renameCategory(category.id, name.value);
+          categoryMessage.show(`Catégorie « ${category.name} » renommée en « ${renamed.name} ».`, 'ok');
+          await refresh();
+        } catch (error) {
+          formMessage.show(
+            errorMessage(error, {
+              400: 'Nom de catégorie invalide.',
+              404: 'Cette catégorie a été supprimée entre-temps.',
+              409: 'Une autre catégorie porte déjà ce nom.',
+            }),
+          );
+        }
+      });
+    });
+    return form;
   }
 
   function replaceProduct(product: Product): void {

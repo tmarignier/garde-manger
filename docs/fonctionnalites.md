@@ -13,7 +13,8 @@
 ### 1. Gérer la liste des produits en stock
 
 - Ajouter un produit : nom, catégorie (ex. épicerie salée, épicerie sucrée, boissons, hygiène), unité (paquet, boîte, bouteille, kg…).
-- Modifier ou supprimer un produit.
+- Modifier ou supprimer un produit, y compris changer sa catégorie.
+- Renommer une catégorie : le nouveau nom s'applique à tous ses produits.
 - Consulter la liste des produits, regroupés par catégorie, avec une recherche par nom et un filtre par catégorie.
 
 ### 2. Suivre la quantité en stock

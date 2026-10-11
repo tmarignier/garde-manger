@@ -322,6 +322,12 @@ button.step {
   padding-left: 1.25rem;
 }
 
+.category-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
 .shopping-items {
   margin: 0;
   padding: 0;

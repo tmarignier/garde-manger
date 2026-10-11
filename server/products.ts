@@ -26,8 +26,13 @@ export function categoryExists(db: DatabaseSync, id: number): boolean {
   return db.prepare('SELECT 1 FROM categories WHERE id = ?').get(id) !== undefined;
 }
 
-export function categoryNameExists(db: DatabaseSync, name: string): boolean {
-  return db.prepare('SELECT 1 FROM categories WHERE name_key = ?').get(nameKey(name)) !== undefined;
+// A category being renamed may keep its own name with another case
+// ('epicerie' to 'Épicerie' is not a duplicate of itself).
+export function categoryNameExists(db: DatabaseSync, name: string, exceptId: number | null = null): boolean {
+  return (
+    db.prepare('SELECT 1 FROM categories WHERE name_key = ? AND id IS NOT ?').get(nameKey(name), exceptId) !==
+    undefined
+  );
 }
 
 // New categories go to the end of the list.
@@ -40,6 +45,15 @@ export function insertCategory(db: DatabaseSync, name: string): Category {
     )
     .get(name, nameKey(name));
   return rowToCategory(row);
+}
+
+// Renaming a category renames it for all its products, which refer to it by id.
+// Returns null when the category does not exist.
+export function renameCategory(db: DatabaseSync, id: number, name: string): Category | null {
+  const row: unknown = db
+    .prepare('UPDATE categories SET name = ?, name_key = ? WHERE id = ? RETURNING id, name, position')
+    .get(name, nameKey(name), id);
+  return row === undefined ? null : rowToCategory(row);
 }
 
 const PRODUCT_SELECT = `
