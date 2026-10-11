@@ -33,3 +33,7 @@ Le [guide d'installation](docs/installation.md) détaille l'installation, les co
 - [Publier une version](docs/publication.md) : pour le mainteneur, la publication des versions et les tests d'une version de développement.
 
 Les conventions de développement sont dans [CLAUDE.md](CLAUDE.md).
+
+## Licence
+
+Garde-manger est distribué sous [licence MIT](LICENSE).
