@@ -30,7 +30,7 @@ Avant chaque commit : `npm run typecheck` et `npm test` doivent passer. L'intég
 
 ## Versions
 
-Une nouvelle version de l'add-on change, dans la même pull request, la version de `package.json` (et `package-lock.json`), de `home-assistant/garde-manger/config.yaml` et ajoute son entrée en tête de `home-assistant/garde-manger/CHANGELOG.md`. Après la fusion, le workflow « Release » lancé à la main sur `main` (`.github/workflows/release.yml`) publie l'image puis crée l'étiquette `vX.Y.Z` ; une étiquette envoyée à la main publie aussi.
+Une nouvelle version de l'add-on change, dans la même pull request, la version de `package.json` (et `package-lock.json`), de `home-assistant/garde-manger/config.yaml` et ajoute son entrée en tête de `home-assistant/garde-manger/CHANGELOG.md`. Après la fusion, le workflow « Release » lancé à la main sur `main` (`.github/workflows/release.yml`) publie l'image puis crée l'étiquette `vX.Y.Z` et la release GitHub, avec l'entrée du journal des versions ; une étiquette envoyée à la main publie aussi.
 
 ## TypeScript
 

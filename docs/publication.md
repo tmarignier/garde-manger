@@ -5,7 +5,9 @@ Ce guide s'adresse au mainteneur du dépôt. Pour installer l'application, voir 
 ## Publier une version
 
 1. Dans une pull request, changer la version (`X.Y.Z`) dans `package.json` et `package-lock.json`, dans `home-assistant/garde-manger/config.yaml`, et ajouter l'entrée de la version en tête de `home-assistant/garde-manger/CHANGELOG.md`. Les tests vérifient que les trois correspondent.
-2. Après la fusion, lancer la publication : onglet Actions de GitHub, workflow « Release », bouton **Run workflow** sur `main`. Le workflow lit la version dans `package.json`, refuse une version déjà publiée, relance les tests, publie les images `ghcr.io/tmarignier/amd64-garde-manger:1.2.3` et `ghcr.io/tmarignier/aarch64-garde-manger:1.2.3`, puis crée l'étiquette `v1.2.3`.
+2. Après la fusion, lancer la publication : onglet Actions de GitHub, workflow « Release », bouton **Run workflow** sur `main`. Le workflow lit la version dans `package.json`, refuse une version déjà publiée, relance les tests, publie les images `ghcr.io/tmarignier/amd64-garde-manger:1.2.3` et `ghcr.io/tmarignier/aarch64-garde-manger:1.2.3`, puis crée l'étiquette `v1.2.3` et la release « Garde-manger 1.2.3 » sur GitHub, avec l'entrée du journal des versions comme notes.
+
+   Si l'étiquette existe déjà sans release, relancer le workflow crée seulement la release, sans republier les images.
 
    Envoyer soi-même l'étiquette (`git tag v1.2.3 && git push origin v1.2.3`, ou une « release » créée sur GitHub) lance la même publication.
 

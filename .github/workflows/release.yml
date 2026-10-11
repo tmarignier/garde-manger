@@ -2,9 +2,10 @@ name: Release
 
 # Publishes the add-on image for a version, either when a vX.Y.Z tag is pushed
 # or when the workflow is run by hand on main ("Run workflow" in the Actions
-# tab). Run by hand, it takes the version from package.json and creates the tag
-# once the images are published. Home Assistant offers the update as soon as the
-# version in config.yaml changes on main.
+# tab). Run by hand, it takes the version from package.json. Once the images
+# are published, it creates the GitHub release (and the tag when run by hand),
+# with the version's changelog entry as notes. Home Assistant offers the update
+# as soon as the version in config.yaml changes on main.
 on:
   push:
     tags: ['v*']
@@ -19,6 +20,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
+      publish: ${{ steps.version.outputs.publish }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -26,16 +28,24 @@ jobs:
           node-version-file: .nvmrc
       - name: Check that the tag matches the add-on version
         id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          publish=true
           if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
             if [ "$GITHUB_REF_NAME" != main ]; then
               echo "Run the release on main, not $GITHUB_REF_NAME" >&2
               exit 1
             fi
             tag="v$(node -p "require('./package.json').version")"
-            if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+            if gh release view "$tag" > /dev/null 2>&1; then
               echo "$tag is already released: change the version first" >&2
               exit 1
+            fi
+            # A tag without a release: the images are already published, only
+            # the release is missing.
+            if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+              publish=false
             fi
           else
             tag="$GITHUB_REF_NAME"
@@ -43,9 +53,11 @@ jobs:
           node scripts/check-version.ts "$tag"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
 
   image:
     needs: version
+    if: needs.version.outputs.publish == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -84,16 +96,26 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-garde-manger:${{ needs.version.outputs.version }}
           push: true
 
-  # Only when run by hand: a pushed tag already exists. A tag pushed with
-  # GITHUB_TOKEN does not start this workflow again.
-  tag:
+  # Run by hand, the release also creates the tag. A tag or release created
+  # with GITHUB_TOKEN does not start this workflow again.
+  release:
     needs: [version, image]
-    if: github.event_name == 'workflow_dispatch'
+    if: ${{ !cancelled() && needs.version.result == 'success' && (needs.image.result == 'success' || needs.image.result == 'skipped') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v5
-      - run: |
-          git tag "${{ needs.version.outputs.tag }}" "$GITHUB_SHA"
-          git push origin "${{ needs.version.outputs.tag }}"
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.version.outputs.tag }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "The release of $TAG already exists"
+            exit 0
+          fi
+          awk -v heading="## $VERSION" '$0 == heading { found = 1; next } found && /^## / { exit } found { print }' \
+            home-assistant/garde-manger/CHANGELOG.md > notes.md
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "Garde-manger $VERSION" --notes-file notes.md
