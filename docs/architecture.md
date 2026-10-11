@@ -145,7 +145,7 @@ Les tables sont déclarées `STRICT` (SQLite vérifie le type de chaque valeur) 
 
 | Méthode | Chemin | Rôle |
 |---|---|---|
-| `GET` | `/api/health` | Vérifier que le serveur répond (sans connexion) |
+| `GET` | `/api/health` | Vérifier que le serveur répond et connaître la version de l'application, affichée en pied de page (sans connexion) |
 | `GET` | `/api/session` | Savoir qui est connecté sur l'appareil et si le premier compte reste à créer (sans connexion) |
 | `POST` | `/api/setup` | Créer le premier compte administrateur, uniquement si aucun compte n'existe (sans connexion) |
 | `POST` | `/api/login` | Se connecter avec son nom et son mot de passe (sans connexion) |
