@@ -19,7 +19,7 @@ Pour ne garder que l'accès par Home Assistant, videz le port dans l'onglet « C
 
 ## Depuis l'extérieur
 
-Le plus simple et le plus sûr est un VPN : installez l'add-on **Tailscale** sur Home Assistant et l'application Tailscale sur les téléphones. L'adresse directe fonctionne alors aussi au magasin, sans ouvrir de port sur la box ou le routeur.
+L'application est prévue pour le réseau local ; le choix d'un accès depuis l'extérieur vous revient. N'ouvrez pas le port directement sur Internet : l'application ne gère pas le HTTPS.
 
 ## Sauvegardes
 

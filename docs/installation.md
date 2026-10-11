@@ -55,14 +55,7 @@ Le port de l'accès direct se change dans l'onglet Configuration de l'add-on, se
 
 ## 5. Depuis l'extérieur
 
-Pour consulter la liste de courses au magasin, la solution recommandée est un **VPN**, par exemple avec Tailscale :
-
-1. Installer l'add-on **Tailscale** depuis la boutique des modules complémentaires, le démarrer et le connecter à un compte Tailscale (lien affiché dans son journal).
-2. Installer l'application **Tailscale** sur chaque téléphone et se connecter au même compte (ou inviter les membres du foyer dans le réseau Tailscale).
-3. Dans la console Tailscale, noter le nom ou l'adresse du serveur (par exemple `homeassistant` ou `100.x.y.z`).
-4. Ajouter à l'écran d'accueil l'adresse `http://<nom Tailscale du serveur>:3000` : elle fonctionne à la maison comme dehors, tant que Tailscale est activé sur le téléphone.
-
-L'application reste ainsi invisible depuis Internet, sans port ouvert sur la box. Si Home Assistant est déjà accessible de l'extérieur (Home Assistant Cloud, ou un autre accès distant), l'application l'est aussi par le menu latéral de Home Assistant.
+L'application est prévue pour le réseau local. Le choix d'un accès depuis l'extérieur revient à chacun. Si Home Assistant est déjà accessible de l'extérieur, l'application l'est aussi par le menu latéral de Home Assistant.
 
 Ouvrir le port `3000` directement sur Internet est **déconseillé** : l'application ne gère pas le HTTPS, et les mots de passe circuleraient en clair.
 
