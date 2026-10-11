@@ -67,6 +67,14 @@ export function matchesSearch(product: Product, search: string): boolean {
   return searchKey(product.name).includes(searchKey(search));
 }
 
+// The category a list is narrowed to: 'all' shows every product, null only
+// the products without a category.
+export type CategoryFilter = 'all' | number | null;
+
+export function matchesCategory(product: Product, filter: CategoryFilter): boolean {
+  return filter === 'all' || product.categoryId === filter;
+}
+
 export function isBelowMinimum(product: Product): boolean {
   return product.quantity < product.minQuantity;
 }

@@ -14,7 +14,7 @@
 
 - Ajouter un produit : nom, catégorie (ex. épicerie salée, épicerie sucrée, boissons, hygiène), unité (paquet, boîte, bouteille, kg…).
 - Modifier ou supprimer un produit.
-- Consulter la liste des produits, regroupés par catégorie, avec une recherche par nom.
+- Consulter la liste des produits, regroupés par catégorie, avec une recherche par nom et un filtre par catégorie.
 
 ### 2. Suivre la quantité en stock
 
@@ -27,7 +27,7 @@
 - Dès que la quantité passe **sous le seuil**, le produit apparaît automatiquement dans la liste de courses.
 - Chaque produit peut aussi avoir une **quantité cible** (ex. « 4 paquets ») : la liste propose alors d'en acheter la différence. Sans quantité cible, on propose de remonter jusqu'au seuil.
 - Pendant les courses, on coche les produits achetés, en corrigeant si besoin la quantité achetée. Valider les achats ajoute les quantités achetées au stock.
-- La liste est regroupée par catégorie, comme le stock, et se manipule d'une main sur le téléphone.
+- La liste est regroupée par catégorie, comme le stock, et se manipule d'une main sur le téléphone. Un filtre par catégorie n'affiche que les produits d'un rayon ; les articles ponctuels restent affichés et les produits cochés hors du filtre sont validés avec les autres.
 - On peut ajouter à la main un article ponctuel à la liste (hors stock suivi).
 
 ## Plus tard (idées, non prioritaires)

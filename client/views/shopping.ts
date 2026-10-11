@@ -7,9 +7,10 @@ import {
   listCategories,
   validatePurchases,
 } from '../api.ts';
-import { PRODUCT_NAME_MAX_LENGTH, groupProducts, parseQuantity } from '../../shared/products.ts';
+import { PRODUCT_NAME_MAX_LENGTH, groupProducts, matchesCategory, parseQuantity } from '../../shared/products.ts';
 import type { Category, ExtraItem, Purchase, ShoppingListItem, ShoppingListResponse } from '../../shared/types.ts';
 import { h, messageLine, whileSubmitting } from '../dom.ts';
+import { categoryFilter } from './category-filter.ts';
 import { formatQuantity } from './stock.ts';
 
 // What is checked during the shopping trip, kept on the device until the
@@ -74,6 +75,7 @@ export function shoppingView(): HTMLElement {
   let categories: Category[] = [];
   const checks = loadChecks();
 
+  const filter = categoryFilter(render);
   const summary = h('p', { class: 'message' }, 'Chargement…');
   const message = messageLine();
   const products = h('div', { class: 'shopping' });
@@ -123,8 +125,11 @@ export function shoppingView(): HTMLElement {
           : `${count} articles à acheter.`;
 
     const byProductId = new Map(list.items.map((item) => [item.product.id, item]));
+    const listed = list.items.map((item) => item.product);
+    filter.update(categories, listed);
+    const category = filter.value();
     const groups = groupProducts(
-      list.items.map((item) => item.product),
+      listed.filter((product) => matchesCategory(product, category)),
       categories,
     );
     products.replaceChildren(
@@ -321,6 +326,7 @@ export function shoppingView(): HTMLElement {
     'section',
     {},
     summary,
+    filter.element,
     message.element,
     products,
     h('section', { class: 'category' }, h('h3', {}, 'Autres articles'), extraList, extraForm),
