@@ -242,7 +242,7 @@ L'application est empaquetée en **add-on**, et le dépôt GitHub sert aussi de 
 
 L'image ne contient que Node.js et les fichiers de l'application : l'interface est compilée avant la construction (`npm run build`), et aucune commande n'est exécutée dans l'image. Elle se construit donc pour `aarch64` sans émulation.
 
-Home Assistant télécharge le dépôt sans identifiants : il doit être **public**. Tant qu'il est privé, l'add-on s'installe en **add-on local** : `npm run addon:local` prépare le dossier `dist/garde-manger/`, qu'on copie dans le dossier `/addons` du serveur (partage Samba ou SSH) ; Home Assistant le construit sur place, et il se met à jour à la main.
+Home Assistant télécharge le dépôt sans identifiants : il doit être **public**, comme les images. Pour essayer une version non publiée, l'add-on s'installe en **add-on local** : `npm run addon:local` prépare le dossier `dist/garde-manger/`, qu'on copie dans le dossier `/addons` du serveur (partage Samba ou SSH) ; Home Assistant le construit sur place, et il se met à jour à la main (voir [Publier une version](publication.md#tester-une-version-de-développement)).
 
 ### Versions
 

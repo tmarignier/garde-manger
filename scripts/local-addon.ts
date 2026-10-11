@@ -1,5 +1,5 @@
 // Prepares dist/garde-manger/, a local add-on that Home Assistant builds on the
-// server itself. Used while the repository is private: copy the folder into
+// server itself, to try an unpublished version: copy the folder into
 // the server's /addons folder. Run through `npm run addon:local`, which
 // compiles the interface first.
 import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
