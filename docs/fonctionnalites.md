@@ -21,6 +21,7 @@
 
 - Chaque produit porte une quantité actuelle.
 - Boutons `+` et `−` pour ajuster rapidement la quantité (on consomme un paquet, on en range un).
+- Consulter l'historique de chaque produit : qui a ajouté, retiré, acheté ou modifié quoi, et quand. Les `+` et `−` faits d'affilée par la même personne sont regroupés sur une ligne.
 
 ### 3. Générer la liste de courses
 
@@ -38,6 +39,6 @@
 - Lieux de rangement (placard, cellier, congélateur).
 - Dates de péremption et alertes.
 - Tri de la liste de courses selon l'ordre des rayons du magasin.
-- Historique complet des mouvements de stock (qui a ajouté ou retiré quoi, et quand).
+- Journal général de toutes les modifications du stock, filtrable par personne.
 - Mises à jour en temps réel entre les appareils.
 - Fonctionnement hors connexion.

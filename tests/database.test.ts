@@ -16,7 +16,7 @@ function tableNames(db: DatabaseSync): string[] {
 describe('openDatabase', () => {
   it('creates every table of the data model', () => {
     const db = openDatabase(':memory:');
-    assert.deepEqual(tableNames(db), ['categories', 'extra_items', 'products', 'sessions', 'users']);
+    assert.deepEqual(tableNames(db), ['categories', 'extra_items', 'product_events', 'products', 'sessions', 'users']);
     assert.equal(getSchemaVersion(db), migrations.length);
     db.close();
   });

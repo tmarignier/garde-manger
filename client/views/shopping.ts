@@ -10,8 +10,8 @@ import {
 import { PRODUCT_NAME_MAX_LENGTH, groupProducts, matchesCategory, parseQuantity } from '../../shared/products.ts';
 import type { Category, ExtraItem, Purchase, ShoppingListItem, ShoppingListResponse } from '../../shared/types.ts';
 import { h, messageLine, whileSubmitting } from '../dom.ts';
+import { formatQuantity } from '../format.ts';
 import { categoryFilter } from './category-filter.ts';
-import { formatQuantity } from './stock.ts';
 
 // What is checked during the shopping trip, kept on the device until the
 // purchases are validated: the bought quantity of each checked product, and

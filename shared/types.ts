@@ -154,3 +154,40 @@ export type CreateExtraItemRequest = {
 export type ExtraItemResponse = {
   extraItem: ExtraItem;
 };
+
+// What happened to a product in one event of its history.
+export type ProductEventKind = 'created' | 'adjusted' | 'purchased' | 'edited' | 'deleted';
+
+// A field of a product's form, as recorded in its history. The category is
+// recorded by name, so that renaming or deleting it later does not rewrite the past.
+export type ProductField = 'name' | 'categoryName' | 'unit' | 'minQuantity' | 'targetQuantity';
+
+// A field's value before and after the event: null when the field had no
+// value (no category, no target), or before a product was created and after it
+// was deleted.
+export type ProductChange = {
+  field: ProductField;
+  before: string | number | null;
+  after: string | number | null;
+};
+
+// One change of a product. Names are those at the time of the event. The
+// quantities are null when the quantity did not change.
+export type ProductEvent = {
+  id: number;
+  productId: number;
+  productName: string;
+  userName: string;
+  kind: ProductEventKind;
+  quantityBefore: number | null;
+  quantityAfter: number | null;
+  changes: ProductChange[];
+  createdAt: string;
+};
+
+// GET /api/products/:id/history: the most recent events first. `hasMore`
+// tells whether older events can be loaded with ?before=<id of the last event>.
+export type ProductHistoryResponse = {
+  events: ProductEvent[];
+  hasMore: boolean;
+};

@@ -13,12 +13,15 @@ import {
 import type {
   CategoriesResponse,
   CategoryResponse,
+  ProductHistoryResponse,
   ProductRequest,
   ProductResponse,
   ProductsResponse,
   UpdateProductRequest,
 } from '../shared/types.ts';
+import { transaction } from './database.ts';
 import { HttpError, readObject, readString } from './http.ts';
+import { findProductSnapshot, hasProductEvents, listProductEvents, recordProductEvent } from './product-history.ts';
 import {
   categoryExists,
   categoryNameExists,
@@ -89,6 +92,19 @@ function readProductId(params: Record<string, string>): number {
   return readId(params, 'Product not found');
 }
 
+// The ?before= of a history page: the id of the last event already shown.
+function readBefore(query: URLSearchParams): number | null {
+  const value = query.get('before');
+  if (value === null) {
+    return null;
+  }
+  const before = Number(value);
+  if (!Number.isSafeInteger(before) || before <= 0) {
+    throw new HttpError(400, 'Invalid before');
+  }
+  return before;
+}
+
 function productResponse(db: DatabaseSync, id: number): ProductResponse {
   const product = findProduct(db, id);
   if (product === null) {
@@ -152,7 +168,12 @@ export const productRoutes: readonly Route[] = [
         throw new HttpError(400, 'Missing or invalid field: quantity');
       }
       const product: ProductRequest = { ...fields, quantity };
-      const response: ProductResponse = { product: insertProduct(context.db, product, currentUser(context).id) };
+      const user = currentUser(context);
+      const response: ProductResponse = transaction(context.db, () => {
+        const inserted = insertProduct(context.db, product, user.id);
+        recordProductEvent(context.db, inserted.id, 'created', null, findProductSnapshot(context.db, inserted.id), user);
+        return { product: inserted };
+      });
       return created(response);
     },
   },
@@ -162,20 +183,44 @@ export const productRoutes: readonly Route[] = [
     handler: (context) => {
       const id = readProductId(context.params);
       const product = readProductRequest(context.db, context.body);
-      if (!updateProduct(context.db, id, product, currentUser(context).id)) {
-        throw new HttpError(404, 'Product not found');
-      }
+      const user = currentUser(context);
+      transaction(context.db, () => {
+        const before = findProductSnapshot(context.db, id);
+        if (before === null || !updateProduct(context.db, id, product, user.id)) {
+          throw new HttpError(404, 'Product not found');
+        }
+        recordProductEvent(context.db, id, 'edited', before, findProductSnapshot(context.db, id), user);
+      });
       return ok(productResponse(context.db, id));
     },
   },
   {
     method: 'DELETE',
     path: '/api/products/:id',
-    handler: ({ db, params }) => {
-      if (!deleteProduct(db, readProductId(params))) {
+    handler: (context) => {
+      const id = readProductId(context.params);
+      const user = currentUser(context);
+      transaction(context.db, () => {
+        const before = findProductSnapshot(context.db, id);
+        if (before === null || !deleteProduct(context.db, id)) {
+          throw new HttpError(404, 'Product not found');
+        }
+        recordProductEvent(context.db, id, 'deleted', before, null, user);
+      });
+      return noContent();
+    },
+  },
+  {
+    // A deleted product keeps its history.
+    method: 'GET',
+    path: '/api/products/:id/history',
+    handler: ({ db, params, query }) => {
+      const id = readProductId(params);
+      if (findProduct(db, id) === null && !hasProductEvents(db, id)) {
         throw new HttpError(404, 'Product not found');
       }
-      return noContent();
+      const response: ProductHistoryResponse = listProductEvents(db, id, readBefore(query));
+      return ok(response);
     },
   },
   {
@@ -196,7 +241,12 @@ export const productRoutes: readonly Route[] = [
       if (quantity === product.quantity) {
         return ok({ product });
       }
-      updateQuantity(context.db, id, quantity, currentUser(context).id);
+      const user = currentUser(context);
+      transaction(context.db, () => {
+        const before = findProductSnapshot(context.db, id);
+        updateQuantity(context.db, id, quantity, user.id);
+        recordProductEvent(context.db, id, 'adjusted', before, findProductSnapshot(context.db, id), user);
+      });
       return ok(productResponse(context.db, id));
     },
   },
