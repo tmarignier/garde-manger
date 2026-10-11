@@ -476,3 +476,17 @@ button.step {
   min-height: 3.25rem;
   font-weight: 600;
 }
+
+/* App version, discreet at the bottom of every screen. */
+footer {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+footer:empty {
+  display: none;
+}

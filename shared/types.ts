@@ -1,7 +1,9 @@
 // Types shared between the server and the client.
 
+// GET /api/health. `version` is the app's version, shown in the footer.
 export type HealthResponse = {
   ok: true;
+  version: string;
 };
 
 export type ErrorResponse = {

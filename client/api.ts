@@ -74,7 +74,7 @@ function isErrorResponse(value: unknown): value is ErrorResponse {
 }
 
 function isHealthResponse(value: unknown): value is HealthResponse {
-  return isRecord(value) && value['ok'] === true;
+  return isRecord(value) && value['ok'] === true && typeof value['version'] === 'string';
 }
 
 function isUser(value: unknown): value is User {

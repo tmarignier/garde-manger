@@ -1,4 +1,4 @@
-import { errorMessage, getSession, logOut, setUnauthorizedHandler } from './api.ts';
+import { errorMessage, getHealth, getSession, logOut, setUnauthorizedHandler } from './api.ts';
 import type { User } from '../shared/types.ts';
 import { h } from './dom.ts';
 import { accountView } from './views/account.ts';
@@ -99,6 +99,18 @@ function createApp(root: HTMLElement): void {
     }
   });
   void start();
+}
+
+// The footer stays empty when the server cannot be reached: the main screen
+// already says so.
+async function showVersion(footer: HTMLElement): Promise<void> {
+  const { version } = await getHealth();
+  footer.textContent = `Version ${version}`;
+}
+
+const footer = document.querySelector<HTMLElement>('#version');
+if (footer !== null) {
+  void showVersion(footer).catch(() => {});
 }
 
 const root = document.querySelector<HTMLElement>('#app');

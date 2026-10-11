@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -54,7 +54,9 @@ describe('server', () => {
     const response = await fetch(`${baseUrl}/api/health`);
     assert.equal(response.status, 200);
     assert.match(response.headers.get('content-type') ?? '', /^application\/json/);
-    assert.deepEqual(await response.json(), { ok: true });
+    const packageJson: unknown = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+    assert.ok(typeof packageJson === 'object' && packageJson !== null && 'version' in packageJson);
+    assert.deepEqual(await response.json(), { ok: true, version: packageJson.version });
   });
 
   it('returns a JSON 404 for an unknown API route', async () => {
