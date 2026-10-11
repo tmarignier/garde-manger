@@ -71,17 +71,11 @@ Quand une nouvelle version est publiée, Home Assistant la propose dans Paramèt
 ## Publier une version
 
 1. Dans une pull request, changer la version (`X.Y.Z`) dans `package.json` et `package-lock.json`, dans `home-assistant/garde-manger/config.yaml`, et ajouter l'entrée de la version en tête de `home-assistant/garde-manger/CHANGELOG.md`. Les tests vérifient que les trois correspondent.
-2. Après la fusion, créer l'étiquette sur le commit de `main` et l'envoyer :
+2. Après la fusion, lancer la publication : onglet Actions de GitHub, workflow « Release », bouton **Run workflow** sur `main`. Le workflow lit la version dans `package.json`, refuse une version déjà publiée, relance les tests, publie les images `ghcr.io/tmarignier/amd64-garde-manger:1.2.3` et `ghcr.io/tmarignier/aarch64-garde-manger:1.2.3`, puis crée l'étiquette `v1.2.3`.
 
-   ```sh
-   git checkout main && git pull
-   git tag v1.2.3
-   git push origin v1.2.3
-   ```
+   Envoyer soi-même l'étiquette (`git tag v1.2.3 && git push origin v1.2.3`, ou une « release » créée sur GitHub) lance la même publication.
 
-3. Le workflow « Release » (onglet Actions de GitHub) vérifie la version, relance les tests et publie les images `ghcr.io/tmarignier/amd64-garde-manger:1.2.3` et `ghcr.io/tmarignier/aarch64-garde-manger:1.2.3`.
-
-Home Assistant voit la nouvelle version dès la fusion : il vaut mieux créer l'étiquette juste après, pour que l'image existe quand quelqu'un lance la mise à jour.
+Home Assistant voit la nouvelle version dès la fusion : il vaut mieux lancer la publication juste après, pour que l'image existe quand quelqu'un lance la mise à jour.
 
 ## Installation sans dépôt public
 
