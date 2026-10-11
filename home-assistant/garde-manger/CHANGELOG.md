@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 1.3.1
+
+- Le numéro de version de l'application s'affiche en bas de chaque écran.
+
 ## 1.3.0
 
 - Historique de chaque produit : le lien « Historique » sous un produit montre qui l'a ajouté, retiré, acheté ou modifié, et quand. L'historique commence avec cette version.
