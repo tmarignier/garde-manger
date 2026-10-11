@@ -16,11 +16,13 @@ import {
   groupProducts,
   isBelowMinimum,
   isValidTarget,
+  matchesCategory,
   matchesSearch,
   parseQuantity,
 } from '../../shared/products.ts';
 import type { Category, Product, ProductRequest } from '../../shared/types.ts';
 import { field, h, messageLine, whileSubmitting } from '../dom.ts';
+import { categoryFilter } from './category-filter.ts';
 
 const UNIT_SUGGESTIONS = ['paquets', 'boîtes', 'bouteilles', 'pots', 'sachets', 'rouleaux', 'pièces', 'kg', 'g', 'L'];
 const NEW_CATEGORY = 'new';
@@ -64,6 +66,7 @@ export function stockView(): HTMLElement {
     'aria-label': 'Rechercher un produit',
     autocomplete: 'off',
   });
+  const filter = categoryFilter(render);
   const addButton = h('button', { type: 'button' }, 'Ajouter un produit');
   const addSlot = h('div');
   const message = messageLine();
@@ -83,8 +86,10 @@ export function stockView(): HTMLElement {
 
   function render(): void {
     items.clear();
+    filter.update(categories, products);
     const query = search.value.trim();
-    const shown = products.filter((product) => matchesSearch(product, query));
+    const category = filter.value();
+    const shown = products.filter((product) => matchesCategory(product, category) && matchesSearch(product, query));
     const groups = groupProducts(shown, categories);
     if (!loaded) {
       list.replaceChildren(h('p', { class: 'message' }, 'Chargement…'));
@@ -93,7 +98,13 @@ export function stockView(): HTMLElement {
         h('p', { class: 'message' }, 'Aucun produit pour l’instant. Commencez par « Ajouter un produit ».'),
       );
     } else if (groups.length === 0) {
-      list.replaceChildren(h('p', { class: 'message' }, `Aucun produit ne correspond à « ${query} ».`));
+      list.replaceChildren(
+        h(
+          'p',
+          { class: 'message' },
+          query === '' ? 'Aucun produit dans cette catégorie.' : `Aucun produit ne correspond à « ${query} ».`,
+        ),
+      );
     } else {
       list.replaceChildren(
         ...groups.map((group) =>
@@ -379,6 +390,7 @@ export function stockView(): HTMLElement {
     'section',
     {},
     h('div', { class: 'toolbar' }, search, addButton),
+    filter.element,
     addSlot,
     message.element,
     list,

@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 1.1.0
+
+- Filtre par catégorie dans le stock et dans la liste de courses.
+
 ## 1.0.0
 
 Première version :

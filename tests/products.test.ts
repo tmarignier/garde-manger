@@ -7,6 +7,7 @@ import {
   isValidDelta,
   isValidQuantity,
   isValidTarget,
+  matchesCategory,
   matchesSearch,
   normalizeText,
   parseQuantity,
@@ -102,6 +103,20 @@ describe('matchesSearch', () => {
     assert.equal(matchesSearch(pates, 'COMPLÈTES'), true);
     assert.equal(matchesSearch(pates, ''), true);
     assert.equal(matchesSearch(pates, 'riz'), false);
+  });
+});
+
+describe('matchesCategory', () => {
+  it('keeps every product, one category, or the products without a category', () => {
+    const sucre = product(1, 'Sucre', 1);
+    const eponges = product(2, 'Éponges', null);
+    assert.equal(matchesCategory(sucre, 'all'), true);
+    assert.equal(matchesCategory(eponges, 'all'), true);
+    assert.equal(matchesCategory(sucre, 1), true);
+    assert.equal(matchesCategory(sucre, 2), false);
+    assert.equal(matchesCategory(eponges, 1), false);
+    assert.equal(matchesCategory(sucre, null), false);
+    assert.equal(matchesCategory(eponges, null), true);
   });
 });
 

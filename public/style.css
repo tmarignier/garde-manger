@@ -214,6 +214,10 @@ button.link {
   flex: none;
 }
 
+select[name='category-filter'] {
+  margin-bottom: 1rem;
+}
+
 .category > h3 {
   margin: 1.5rem 0 0.25rem;
   font-size: 1rem;
