@@ -29,10 +29,10 @@ export function createApp(options: AppOptions): Server {
 
 async function handleRequest(req: IncomingMessage, res: ServerResponse, options: AppOptions): Promise<void> {
   const method = req.method ?? 'GET';
-  const { pathname } = new URL(req.url ?? '/', 'http://localhost');
+  const { pathname, searchParams } = new URL(req.url ?? '/', 'http://localhost');
 
   if (pathname === '/api' || pathname.startsWith('/api/')) {
-    await handleApiRequest(req, res, options, method, pathname);
+    await handleApiRequest(req, res, options, method, pathname, searchParams);
     return;
   }
 
@@ -54,6 +54,7 @@ async function handleApiRequest(
   options: AppOptions,
   method: string,
   pathname: string,
+  query: URLSearchParams,
 ): Promise<void> {
   try {
     const match = findRoute(options.routes ?? defaultRoutes, method, pathname);
@@ -89,6 +90,7 @@ async function handleApiRequest(
     const result = await route.handler({
       db: options.db,
       params,
+      query,
       body,
       user: session?.user ?? null,
       sessionToken: session === null ? null : sessionToken,

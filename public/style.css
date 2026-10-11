@@ -308,6 +308,56 @@ button.step {
   margin-top: 0;
 }
 
+/* History of a product, under it in the stock. */
+.product-history {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+}
+
+.product-history h3 {
+  margin-top: 0;
+}
+
+.product-history h4 {
+  margin: 0.75rem 0 0.25rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.history {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history li {
+  display: grid;
+  grid-template-columns: 3.25rem 1fr;
+  padding: 0.375rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.history-time {
+  grid-row: span 2;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.history-detail {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.product-meta button.link {
+  padding: 0;
+  font-size: inherit;
+}
+
 .categories {
   margin-top: 2rem;
 }

@@ -23,18 +23,16 @@ import {
 } from '../../shared/products.ts';
 import type { Category, Product, ProductRequest } from '../../shared/types.ts';
 import { field, h, messageLine, whileSubmitting } from '../dom.ts';
+import { formatQuantity, formatTime } from '../format.ts';
 import { categoryFilter } from './category-filter.ts';
+import { productHistory } from './product-history.ts';
 
 const UNIT_SUGGESTIONS = ['paquets', 'boîtes', 'bouteilles', 'pots', 'sachets', 'rouleaux', 'pièces', 'kg', 'g', 'L'];
 const NEW_CATEGORY = 'new';
 
-export function formatQuantity(value: number): string {
-  return value.toLocaleString('fr-FR', { maximumFractionDigits: 3 });
-}
-
 function formatUpdate(product: Product): string {
   const date = new Date(product.updatedAt);
-  const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const time = formatTime(date);
   const day =
     date.toDateString() === new Date().toDateString()
       ? `aujourd’hui à ${time}`
@@ -193,7 +191,19 @@ export function stockView(): HTMLElement {
       '−',
     );
     const plus = h('button', { type: 'button', class: 'step', 'aria-label': `Ajouter 1 : ${product.name}` }, '+');
+    const historyButton = h('button', { type: 'button', class: 'link' }, 'Historique');
+    // Shows the product's form or its history under it, or closes what is open.
     const editSlot = h('div');
+    function toggle(content: 'form' | 'history'): void {
+      const open = editSlot.dataset['content'];
+      editSlot.replaceChildren();
+      delete editSlot.dataset['content'];
+      if (open === content) {
+        return;
+      }
+      editSlot.dataset['content'] = content;
+      editSlot.append(content === 'form' ? productForm(product, () => toggle('form')) : productHistory(product));
+    }
     const item = h(
       'li',
       { 'data-low': isBelowMinimum(product) ? 'true' : undefined },
@@ -213,7 +223,7 @@ export function stockView(): HTMLElement {
         ),
         h('div', { class: 'stepper' }, minus, plus),
       ),
-      h('p', { class: 'product-meta' }, formatUpdate(product)),
+      h('p', { class: 'product-meta' }, formatUpdate(product), ' · ', historyButton),
       editSlot,
     );
     items.set(product.id, item);
@@ -233,13 +243,8 @@ export function stockView(): HTMLElement {
 
     minus.addEventListener('click', () => adjust(-1));
     plus.addEventListener('click', () => adjust(1));
-    nameButton.addEventListener('click', () => {
-      if (editSlot.firstChild !== null) {
-        editSlot.replaceChildren();
-        return;
-      }
-      editSlot.replaceChildren(productForm(product, () => editSlot.replaceChildren()));
-    });
+    nameButton.addEventListener('click', () => toggle('form'));
+    historyButton.addEventListener('click', () => toggle('history'));
     return item;
   }
 

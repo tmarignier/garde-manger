@@ -4,6 +4,7 @@ import type { ExtraItemResponse, Purchase, PurchasesRequest, ShoppingListRespons
 import { transaction } from './database.ts';
 import { deleteExtraItem, insertExtraItem, listExtraItems } from './extra-items.ts';
 import { HttpError, readObject, readString } from './http.ts';
+import { findProductSnapshot, recordProductEvent } from './product-history.ts';
 import { findProduct, listProducts, updateQuantity } from './products.ts';
 import { created, currentUser, noContent, ok } from './router.ts';
 import type { Route } from './router.ts';
@@ -69,13 +70,16 @@ export const shoppingListRoutes: readonly Route[] = [
     path: '/api/shopping-list/purchases',
     handler: (context) => {
       const { purchases, extraItemIds } = readPurchasesRequest(context.body);
-      const userId = currentUser(context).id;
+      const user = currentUser(context);
       const now = new Date();
       transaction(context.db, () => {
         for (const purchase of purchases) {
           const product = findProduct(context.db, purchase.productId);
           if (product !== null) {
-            updateQuantity(context.db, product.id, applyAdjustment(product.quantity, purchase.quantity), userId, now);
+            const before = findProductSnapshot(context.db, product.id);
+            updateQuantity(context.db, product.id, applyAdjustment(product.quantity, purchase.quantity), user.id, now);
+            const after = findProductSnapshot(context.db, product.id);
+            recordProductEvent(context.db, product.id, 'purchased', before, after, user, now);
           }
         }
         for (const id of extraItemIds) {

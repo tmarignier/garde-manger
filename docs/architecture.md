@@ -82,7 +82,7 @@ Une gestion d'utilisateurs basique : chaque membre de la famille a son propre co
 - **Administrateur** : il crée les comptes des autres membres, peut réinitialiser leur mot de passe et supprimer un compte. Pas d'inscription libre.
 - **Membre** : il utilise l'application et peut changer son propre mot de passe.
 - Tous les comptes voient et modifient le même stock.
-- Chaque produit garde **qui l'a modifié en dernier** et quand, pour savoir qui a pris le dernier paquet.
+- Chaque produit garde **qui l'a modifié en dernier** et quand, et l'historique de ses modifications (voir [Historique des produits](#historique-des-produits)).
 - Les noms sont comparés sans tenir compte des majuscules, lettres accentuées comprises : « Léa » et « LÉA » sont le même compte.
 - Les mots de passe font au moins 8 caractères. Ils sont stockés hachés avec `scrypt` (module intégré `node:crypto`, sel aléatoire, paramètres enregistrés avec chaque empreinte pour pouvoir les renforcer plus tard), jamais en clair.
 - Une fois connecté, l'appareil garde une session (cookie `HttpOnly`, `SameSite=Strict`) pour ne pas redemander le mot de passe à chaque fois. La session dure 90 jours et se prolonge toute seule quand l'appareil s'en sert : un téléphone utilisé chaque semaine reste connecté.
@@ -124,6 +124,12 @@ products                  produits suivis en stock
 
 extra_items               articles ponctuels ajoutés à la main à la liste de courses
   id, name
+
+product_events            historique des modifications des produits
+  id, product_id (sans clé étrangère), product_name, user_id, user_name,
+  kind ('created', 'adjusted', 'purchased', 'edited', 'deleted'),
+  quantity_before, quantity_after (vides si la quantité n'a pas changé),
+  changes (JSON : champs de la fiche changés, avant et après), created_at
 ```
 
 La liste de courses n'est **pas stockée** : elle est calculée à partir des produits dont `quantity < min_quantity`, à laquelle s'ajoutent les articles ponctuels. Quantité à acheter = `target_quantity − quantity` si une cible existe, sinon `min_quantity − quantity`. Le calcul est dans `server/shopping-list.ts`, sans HTTP ni SQLite.
@@ -134,6 +140,16 @@ La liste de courses n'est **pas stockée** : elle est calculée à partir des pr
 - Valider envoie en une fois les quantités achetées et les articles ponctuels cochés. Les quantités s'ajoutent au stock du moment, comme un `+` : un changement fait à la maison pendant les courses est conservé. Les articles ponctuels validés sont retirés de la liste. Tout est enregistré dans une seule transaction.
 - Un produit ou un article ponctuel supprimé entre-temps est ignoré à la validation. Un produit qui a quitté la liste entre-temps (quelqu'un l'a racheté) est décoché sur l'appareil au rechargement de la liste.
 - La quantité achetée est proposée par défaut et se modifie avant de valider (par exemple un lot de six au lieu de quatre paquets).
+
+### Historique des produits
+
+- Chaque modification réelle d'un produit enregistre un événement : création, `+` ou `−`, achat validé, fiche modifiée, suppression. Il garde l'auteur, l'heure, la quantité avant et après, et les champs de la fiche changés. Rien n'est enregistré si rien ne change (un `−` à 0, une fiche enregistrée sans modification).
+- L'événement est écrit dans la même transaction que la modification : l'un n'existe pas sans l'autre.
+- Les noms (produit, auteur, catégorie) sont copiés au moment de l'événement : supprimer un compte ou renommer une catégorie ne réécrit pas le passé.
+- L'historique d'un produit supprimé est gardé. Un identifiant de produit n'est donc jamais réutilisé : un nouveau produit prend un identifiant plus grand que tous ceux des produits et de l'historique.
+- L'historique est gardé sans limite (quelques Mo par an). Il commence avec la version 1.3.0 : les modifications plus anciennes ne sont pas connues.
+- En base, chaque appui sur `+` ou `−` est un événement ; l'écran regroupe ceux d'une même personne, dans le même sens et à moins de 5 minutes d'intervalle (« −3 (3 fois) »).
+- La conception et ses choix sont dans [conception/historique-produits.md](conception/historique-produits.md).
 
 ### Migrations
 
@@ -158,6 +174,7 @@ Les tables sont déclarées `STRICT` (SQLite vérifie le type de chaque valeur) 
 | `PUT` | `/api/products/:id` | Modifier un produit |
 | `DELETE` | `/api/products/:id` | Supprimer un produit |
 | `POST` | `/api/products/:id/adjust` | Ajuster la quantité (`{ "delta": -1 }`) |
+| `GET` | `/api/products/:id/history` | Historique du produit, 50 événements à la fois, du plus récent au plus ancien (`?before=<id>` pour les suivants) : `{ "events": [...], "hasMore": true }`. Fonctionne aussi pour un produit supprimé |
 | `GET` | `/api/shopping-list` | Obtenir la liste de courses calculée |
 | `POST` | `/api/shopping-list/purchases` | Valider des achats (`{ "purchases": [{ "productId": 1, "quantity": 3 }], "extraItemIds": [2] }`) : ajoute les quantités au stock, retire les articles ponctuels, et renvoie la nouvelle liste |
 | `POST` | `/api/extra-items` | Ajouter un article ponctuel (`{ "name": "Bougies" }`) |
@@ -186,17 +203,20 @@ server/                 exécuté directement par Node.js
   account-routes.ts     routes de l'API pour la connexion et les comptes
   products.ts           lecture et écriture des produits et catégories en base
   product-routes.ts     routes de l'API pour les produits et catégories
+  product-history.ts    lecture et écriture de l'historique des produits en base
   extra-items.ts        lecture et écriture des articles ponctuels en base
   shopping-list-routes.ts  routes de l'API pour la liste de courses et les achats
 client/                 compilé par tsc vers public/js/client/
   app.ts                point d'entrée de l'interface
   api.ts                appels à l'API
   dom.ts                petites fonctions pour construire l'interface
-  views/                écrans (installation, connexion, compte, comptes, stock, courses)
+  format.ts             formats français des quantités, heures et jours
+  views/                écrans (installation, connexion, compte, comptes, stock, historique d'un produit, courses)
 shared/
   types.ts              types partagés entre serveur et interface
   accounts.ts           règles des comptes (longueur du nom et du mot de passe), communes aux deux
   products.ts           règles du stock (validation, variations de quantité, regroupement, recherche)
+  product-history.ts    règles de l'historique (ce qui est enregistré, regroupement des + et −, validation)
 public/                 servi tel quel par le serveur
   index.html
   style.css

@@ -1,3 +1,4 @@
+import { isProductEvent } from '../shared/product-history.ts';
 import type {
   Category,
   ChangePasswordRequest,
@@ -7,6 +8,7 @@ import type {
   ExtraItem,
   HealthResponse,
   Product,
+  ProductHistoryResponse,
   ProductRequest,
   PurchasesRequest,
   ResetPasswordRequest,
@@ -229,6 +231,21 @@ export async function deleteProduct(id: number): Promise<void> {
 
 export async function adjustProduct(id: number, delta: number): Promise<Product> {
   return readProduct(await request('POST', `api/products/${id}/adjust`, { delta }));
+}
+
+// The most recent events of a product, or those older than the event `before`.
+export async function getProductHistory(id: number, before: number | null = null): Promise<ProductHistoryResponse> {
+  const query = before === null ? '' : `?before=${before}`;
+  const data = await request('GET', `api/products/${id}/history${query}`);
+  if (
+    !isRecord(data) ||
+    !Array.isArray(data['events']) ||
+    !data['events'].every(isProductEvent) ||
+    typeof data['hasMore'] !== 'boolean'
+  ) {
+    throw new Error('Unexpected product history response');
+  }
+  return { events: data['events'], hasMore: data['hasMore'] };
 }
 
 function isExtraItem(value: unknown): value is ExtraItem {

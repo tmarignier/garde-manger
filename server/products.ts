@@ -98,12 +98,16 @@ export function findProduct(db: DatabaseSync, id: number): Product | null {
   return row === undefined ? null : rowToProduct(row);
 }
 
+// The id is never one of a deleted product, which SQLite could otherwise
+// reuse: the new product would inherit the deleted one's history.
 export function insertProduct(db: DatabaseSync, product: ProductRequest, userId: number, now = new Date()): Product {
   const result = db
     .prepare(
       `INSERT INTO products
-         (name, category_id, unit, quantity, min_quantity, target_quantity, updated_by, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, name, category_id, unit, quantity, min_quantity, target_quantity, updated_by, updated_at)
+       VALUES (
+         (SELECT max(coalesce((SELECT max(id) FROM products), 0), coalesce((SELECT max(product_id) FROM product_events), 0)) + 1),
+         ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       product.name,

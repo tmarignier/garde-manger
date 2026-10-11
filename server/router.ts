@@ -11,6 +11,8 @@ export type RouteAccess = 'public' | 'user' | 'admin';
 export type RouteContext = {
   db: DatabaseSync;
   params: Record<string, string>;
+  // The query string, such as ?before=42.
+  query: URLSearchParams;
   body: unknown;
   // The logged-in user, always set for 'user' and 'admin' routes.
   user: User | null;

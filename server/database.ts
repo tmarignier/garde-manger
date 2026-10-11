@@ -68,6 +68,26 @@ export const migrations: readonly string[] = [
   `
   ALTER TABLE extra_items DROP COLUMN checked;
   `,
+  // The history of each product. Events have no foreign key to products, so
+  // that a deleted product keeps its history; names are copied so that a
+  // deleted account or a renamed category does not rewrite the past.
+  `
+  CREATE TABLE product_events (
+    id INTEGER PRIMARY KEY,
+    product_id INTEGER NOT NULL,
+    product_name TEXT NOT NULL,
+    user_id INTEGER REFERENCES users (id) ON DELETE SET NULL,
+    user_name TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('created', 'adjusted', 'purchased', 'edited', 'deleted')),
+    quantity_before REAL,
+    quantity_after REAL,
+    changes TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL
+  ) STRICT;
+
+  CREATE INDEX product_events_product_id ON product_events (product_id, id);
+  CREATE INDEX product_events_user_id ON product_events (user_id);
+  `,
 ];
 
 export function getSchemaVersion(db: DatabaseSync): number {
