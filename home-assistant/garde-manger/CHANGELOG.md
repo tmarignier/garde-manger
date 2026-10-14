@@ -1,5 +1,12 @@
 # Journal des versions
 
+## 1.4.0
+
+- Stock plus compact : une ligne par produit. « Modifié par … » et le lien « Historique » s'affichent en touchant le nom du produit.
+- Filtres en pastilles, avec « À racheter » et « En rupture » et leur nombre de produits.
+- La recherche et les filtres restent en haut de l'écran pendant qu'on fait défiler le stock, et sont conservés en passant par la liste de courses.
+- Quand la recherche ne trouve rien, un bouton propose d'ajouter le produit avec le nom déjà saisi.
+
 ## 1.3.1
 
 - Le numéro de version de l'application s'affiche en bas de chaque écran.
