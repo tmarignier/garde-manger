@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 1.7.0
+
+- Nouvelle pastille « Fréquents » dans le stock : les produits que la famille ajuste le plus souvent avec `+` et `−`, sans passer par la recherche. Elle apparaît dès qu'un produit a été ajusté au moins deux fois dans les 30 derniers jours.
+
 ## 1.6.0
 
 - Les cases cochées de l'écran Courses et les quantités achetées sont gardées jusqu'à « Valider les achats », et partagées par toute la famille : on peut cocher en passant la commande d'un drive, puis valider à la livraison, depuis n'importe quel téléphone.
