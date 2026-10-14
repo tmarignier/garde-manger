@@ -1,6 +1,6 @@
 {
   "name": "garde-manger",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "description": "Application web familiale de gestion des stocks d'épicerie",
   "license": "MIT",

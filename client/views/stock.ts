@@ -16,6 +16,7 @@ import {
   UNIT_MAX_LENGTH,
   groupProducts,
   isBelowMinimum,
+  isOutOfStock,
   isValidTarget,
   matchesSearch,
   matchesStockFilter,
@@ -64,6 +65,34 @@ function saveFilters(filters: SavedFilters): void {
   }
 }
 
+const COLLAPSED_KEY = 'garde-manger.collapsed-categories';
+
+// The categories folded on this device, by id ('none' for the products
+// without a category). Kept between visits; each device folds its own.
+function loadCollapsed(): Set<string> {
+  try {
+    const data: unknown = JSON.parse(localStorage.getItem(COLLAPSED_KEY) ?? '[]');
+    if (Array.isArray(data)) {
+      return new Set(data.filter((key): key is string => typeof key === 'string'));
+    }
+  } catch {
+    // Unreadable or unavailable storage: every category is open.
+  }
+  return new Set();
+}
+
+function saveCollapsed(collapsed: ReadonlySet<string>): void {
+  try {
+    localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...collapsed]));
+  } catch {
+    // See loadCollapsed.
+  }
+}
+
+function countLabel(count: number): string {
+  return count === 1 ? '1 produit' : `${count} produits`;
+}
+
 function formatUpdate(product: Product): string {
   const date = new Date(product.updatedAt);
   const time = formatTime(date);
@@ -106,7 +135,9 @@ export function stockView(): HTMLElement {
   const addButton = h('button', { type: 'button' }, 'Ajouter');
   const addSlot = h('div');
   const message = messageLine();
+  const summary = h('p', { class: 'summary' });
   const list = h('div', { class: 'stock' });
+  const collapsed = loadCollapsed();
   const categoryList = h('ul', { class: 'category-list' });
   const items = new Map<number, HTMLLIElement>();
 
@@ -132,8 +163,20 @@ export function stockView(): HTMLElement {
     }
     const query = search.value.trim();
     const current = filter.value();
-    const shown = products.filter((product) => matchesStockFilter(product, current) && matchesSearch(product, query));
+    const shown = products.filter(
+      (product) => matchesStockFilter(product, current) && matchesSearch(product, query, categoryNameOf(product)),
+    );
     const groups = groupProducts(shown, categories);
+    // Left empty when nothing is shown: the list then says why.
+    summary.textContent =
+      !loaded || shown.length === 0
+        ? ''
+        : shown.length === products.length
+          ? `${countLabel(products.length)} dans le stock.`
+          : `${countLabel(shown.length)} sur ${products.length}.`;
+    // Folding only applies to the whole stock: a search or a filter shows
+    // everything it finds.
+    const foldable = query === '' && current === 'all';
     if (!loaded) {
       list.replaceChildren(h('p', { class: 'message' }, 'Chargement…'));
     } else if (products.length === 0) {
@@ -144,17 +187,44 @@ export function stockView(): HTMLElement {
       list.replaceChildren(...noMatch(query, current));
     } else {
       list.replaceChildren(
-        ...groups.map((group) =>
-          h(
-            'section',
-            { class: 'category' },
-            h('h3', {}, group.category?.name ?? 'Sans catégorie'),
-            h('ul', { class: 'products' }, ...group.products.map(productItem)),
-          ),
-        ),
+        ...groups.map((group) => categorySection(group.category, group.products, foldable)),
       );
     }
     categoryList.replaceChildren(...categories.map(categoryItem));
+  }
+
+  function categoryNameOf(product: Product): string {
+    return categories.find((category) => category.id === product.categoryId)?.name ?? '';
+  }
+
+  // A category of the list, with its products. Its title shows how many
+  // products it has and, on the whole stock, folds or unfolds it.
+  function categorySection(category: Category | null, shown: Product[], foldable: boolean): HTMLElement {
+    const name = category?.name ?? 'Sans catégorie';
+    const products = h('ul', { class: 'products' }, ...shown.map(productItem));
+    const count = h('span', { class: 'category-count' }, String(shown.length));
+    if (!foldable) {
+      return h('section', { class: 'category' }, h('h3', {}, name, count), products);
+    }
+    const key = category === null ? 'none' : String(category.id);
+    const toggle = h(
+      'button',
+      { type: 'button', class: 'category-toggle', 'aria-expanded': collapsed.has(key) ? 'false' : 'true' },
+      name,
+      count,
+    );
+    products.hidden = collapsed.has(key);
+    toggle.addEventListener('click', () => {
+      if (collapsed.has(key)) {
+        collapsed.delete(key);
+      } else {
+        collapsed.add(key);
+      }
+      saveCollapsed(collapsed);
+      products.hidden = collapsed.has(key);
+      toggle.setAttribute('aria-expanded', products.hidden ? 'false' : 'true');
+    });
+    return h('section', { class: 'category' }, h('h3', {}, toggle), products);
   }
 
   // What the list says when nothing matches. A search that only finds
@@ -170,7 +240,7 @@ export function stockView(): HTMLElement {
             : 'Aucun produit dans cette catégorie.';
       return [h('p', { class: 'message' }, text)];
     }
-    if (current !== 'all' && products.some((product) => matchesSearch(product, query))) {
+    if (current !== 'all' && products.some((product) => matchesSearch(product, query, categoryNameOf(product)))) {
       const everywhere = h('button', { type: 'button', class: 'secondary' }, 'Chercher dans tout le stock');
       everywhere.addEventListener('click', () => {
         filter.restore('all');
@@ -276,7 +346,7 @@ export function stockView(): HTMLElement {
     }
     const item = h(
       'li',
-      { 'data-low': isBelowMinimum(product) ? 'true' : undefined },
+      { 'data-low': isBelowMinimum(product) ? 'true' : undefined, 'data-out': isOutOfStock(product) ? 'true' : undefined },
       h(
         'div',
         { class: 'product-row' },
@@ -285,7 +355,11 @@ export function stockView(): HTMLElement {
           'span',
           { class: 'quantity' },
           `${formatQuantity(product.quantity)}${unit}`,
-          isBelowMinimum(product) ? h('span', { class: 'badge low' }, 'à racheter') : null,
+          isOutOfStock(product)
+            ? h('span', { class: 'badge out' }, 'en rupture')
+            : isBelowMinimum(product)
+              ? h('span', { class: 'badge low' }, 'à racheter')
+              : null,
         ),
         h('div', { class: 'stepper' }, minus, plus),
       ),
@@ -551,6 +625,7 @@ export function stockView(): HTMLElement {
     header,
     addSlot,
     message.element,
+    summary,
     list,
     h(
       'details',
@@ -565,11 +640,33 @@ export function stockView(): HTMLElement {
   function onVisible(): void {
     if (!view.isConnected) {
       document.removeEventListener('visibilitychange', onVisible);
+      document.removeEventListener('keydown', onKey);
     } else if (document.visibilityState === 'visible') {
       void refresh();
     }
   }
   document.addEventListener('visibilitychange', onVisible);
+
+  // Keyboard shortcuts on a computer: « / » goes to the search, Échap clears it.
+  function onKey(event: KeyboardEvent): void {
+    if (!view.isConnected) {
+      document.removeEventListener('keydown', onKey);
+      return;
+    }
+    const target = event.target;
+    const typing =
+      target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
+    if (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault();
+      search.focus();
+      search.select();
+    } else if (event.key === 'Escape' && target === search && search.value !== '') {
+      event.preventDefault();
+      search.value = '';
+      onFilterChange();
+    }
+  }
+  document.addEventListener('keydown', onKey);
   new ResizeObserver(() => {
     view.style.setProperty('--header-height', `${header.offsetHeight}px`);
   }).observe(header);

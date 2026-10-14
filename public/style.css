@@ -327,6 +327,68 @@ button.chip[aria-pressed='true'] {
   color: var(--error);
 }
 
+/* Out of stock is the most urgent: the quantity and its badge are bold. */
+.products li[data-out] .quantity {
+  font-weight: 600;
+}
+
+.badge.out {
+  font-weight: 600;
+}
+
+.products li[data-low] .badge.out {
+  color: var(--error);
+}
+
+.summary {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.summary:empty {
+  display: none;
+}
+
+.category-count {
+  margin-left: 0.5rem;
+  font-weight: 400;
+}
+
+/* The title of a category folds it: it fills the line, easy to tap. */
+.category > h3:has(.category-toggle) {
+  margin-top: 0.5rem;
+  padding: 0;
+}
+
+button.category-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 2.75rem;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+}
+
+button.category-toggle::before {
+  content: '▾';
+  /* The arrow is decoration: screen readers get aria-expanded instead. */
+  content: '▾' / '';
+  width: 1.25rem;
+  flex: none;
+}
+
+button.category-toggle[aria-expanded='false']::before {
+  content: '▸';
+  content: '▸' / '';
+}
+
 .stepper {
   display: flex;
   flex: none;

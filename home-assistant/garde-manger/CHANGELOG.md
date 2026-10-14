@@ -1,5 +1,13 @@
 # Journal des versions
 
+## 1.5.0
+
+- Recherche sur plusieurs mots, dans n'importe quel ordre, et aussi dans le nom de la catégorie.
+- Catégories repliables, avec leur nombre de produits ; chaque appareil mémorise les siennes.
+- Nombre de produits affichés en tête du stock.
+- Badge « en rupture » pour les produits à 0, distinct de « à racheter ».
+- Sur ordinateur, `/` place le curseur dans la recherche et Échap l'efface.
+
 ## 1.4.0
 
 - Stock plus compact : une ligne par produit. « Modifié par … » et le lien « Historique » s'affichent en touchant le nom du produit.

@@ -63,8 +63,14 @@ export function searchKey(text: string): string {
     .trim();
 }
 
-export function matchesSearch(product: Product, search: string): boolean {
-  return searchKey(product.name).includes(searchKey(search));
+// Every word of the search must appear, in any order, in the product's name or
+// in its category's name: 'basmati riz' finds 'Riz basmati', and 'surgelés'
+// finds every product of the « Surgelés » category.
+export function matchesSearch(product: Product, search: string, categoryName = ''): boolean {
+  const text = `${searchKey(product.name)} ${searchKey(categoryName)}`;
+  return searchKey(search)
+    .split(/\s+/)
+    .every((word) => text.includes(word));
 }
 
 // The category a list is narrowed to: 'all' shows every product, null only
