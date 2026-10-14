@@ -244,6 +244,9 @@ export function stockView(): HTMLElement {
   function replaceProduct(product: Product): void {
     products = products.map((existing) => (existing.id === product.id ? product : existing));
     items.get(product.id)?.replaceWith(productItem(product));
+    // Updates the counts of the chips; the list itself is left as is, so that
+    // a product does not vanish under the thumb when it leaves the filter.
+    filter.update(categories, products);
   }
 
   function productItem(product: Product): HTMLLIElement {
