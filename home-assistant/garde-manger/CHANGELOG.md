@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 1.5.1
+
+- « Mon compte », « Comptes » et « Se déconnecter » passent en bas de l'écran, au-dessus de la version. En haut, il ne reste que Stock et Courses.
+
 ## 1.5.0
 
 - Recherche sur plusieurs mots, dans n'importe quel ordre, et aussi dans le nom de la catégorie.
