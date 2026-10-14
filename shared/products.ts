@@ -79,6 +79,24 @@ export function isBelowMinimum(product: Product): boolean {
   return product.quantity < product.minQuantity;
 }
 
+export function isOutOfStock(product: Product): boolean {
+  return product.quantity <= 0;
+}
+
+// What the stock list is narrowed to: a category, the products below their
+// minimum ('low') or the products out of stock ('out').
+export type StockFilter = CategoryFilter | 'low' | 'out';
+
+export function matchesStockFilter(product: Product, filter: StockFilter): boolean {
+  if (filter === 'low') {
+    return isBelowMinimum(product);
+  }
+  if (filter === 'out') {
+    return isOutOfStock(product);
+  }
+  return matchesCategory(product, filter);
+}
+
 export type ProductGroup = {
   // Null for the products without a category, listed last.
   category: Category | null;

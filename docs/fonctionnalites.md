@@ -15,7 +15,9 @@
 - Ajouter un produit : nom, catégorie (ex. épicerie salée, épicerie sucrée, boissons, hygiène), unité (paquet, boîte, bouteille, kg…).
 - Modifier ou supprimer un produit, y compris changer sa catégorie.
 - Renommer une catégorie : le nouveau nom s'applique à tous ses produits.
-- Consulter la liste des produits, regroupés par catégorie, avec une recherche par nom et un filtre par catégorie.
+- Consulter la liste des produits, regroupés par catégorie, une ligne par produit. La recherche par nom et les filtres restent en haut de l'écran pendant qu'on fait défiler la liste ; ils sont conservés quand on passe par la liste de courses.
+- Filtrer d'un toucher : les produits à racheter (sous leur seuil), ceux en rupture (quantité 0), ou une catégorie.
+- Quand la recherche ne trouve rien, un bouton propose d'ajouter le produit avec le nom déjà saisi ; si le produit existe hors du filtre choisi, un bouton propose de chercher dans tout le stock.
 
 ### 2. Suivre la quantité en stock
 
@@ -29,7 +31,7 @@
 - Dès que la quantité passe **sous le seuil**, le produit apparaît automatiquement dans la liste de courses.
 - Chaque produit peut aussi avoir une **quantité cible** (ex. « 4 paquets ») : la liste propose alors d'en acheter la différence. Sans quantité cible, on propose de remonter jusqu'au seuil.
 - Pendant les courses, on coche les produits achetés, en corrigeant si besoin la quantité achetée. Valider les achats ajoute les quantités achetées au stock.
-- La liste est regroupée par catégorie, comme le stock, et se manipule d'une main sur le téléphone. Un filtre par catégorie n'affiche que les produits d'un rayon ; les articles ponctuels restent affichés et les produits cochés hors du filtre sont validés avec les autres.
+- La liste est regroupée par catégorie, comme le stock, et se manipule d'une main sur le téléphone. Un filtre par catégorie, en pastilles, n'affiche que les produits d'un rayon ; les articles ponctuels restent affichés et les produits cochés hors du filtre sont validés avec les autres.
 - On peut ajouter à la main un article ponctuel à la liste (hors stock suivi).
 
 ## Plus tard (idées, non prioritaires)

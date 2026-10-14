@@ -4,11 +4,13 @@ import {
   applyAdjustment,
   groupProducts,
   isBelowMinimum,
+  isOutOfStock,
   isValidDelta,
   isValidQuantity,
   isValidTarget,
   matchesCategory,
   matchesSearch,
+  matchesStockFilter,
   normalizeText,
   parseQuantity,
 } from '../shared/products.ts';
@@ -124,6 +126,29 @@ describe('isBelowMinimum', () => {
   it('is true strictly under the minimum', () => {
     assert.equal(isBelowMinimum(product(1, 'Riz', null, 1, 2)), true);
     assert.equal(isBelowMinimum(product(1, 'Riz', null, 2, 2)), false);
+  });
+});
+
+describe('isOutOfStock', () => {
+  it('is true at zero only', () => {
+    assert.equal(isOutOfStock(product(1, 'Riz', null, 0, 0)), true);
+    assert.equal(isOutOfStock(product(1, 'Riz', null, 0.5, 2)), false);
+  });
+});
+
+describe('matchesStockFilter', () => {
+  it('keeps the products to buy again, those out of stock, or a category', () => {
+    const riz = product(1, 'Riz', 1, 1, 2);
+    const sel = product(2, 'Sel', 2, 0, 0);
+    const sucre = product(3, 'Sucre', 1, 3, 1);
+    assert.equal(matchesStockFilter(riz, 'low'), true);
+    assert.equal(matchesStockFilter(sel, 'low'), false);
+    assert.equal(matchesStockFilter(sucre, 'low'), false);
+    assert.equal(matchesStockFilter(riz, 'out'), false);
+    assert.equal(matchesStockFilter(sel, 'out'), true);
+    assert.equal(matchesStockFilter(sucre, 1), true);
+    assert.equal(matchesStockFilter(sel, 1), false);
+    assert.equal(matchesStockFilter(sel, 'all'), true);
   });
 });
 

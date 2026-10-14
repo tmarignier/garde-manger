@@ -7,7 +7,7 @@ import {
   listCategories,
   validatePurchases,
 } from '../api.ts';
-import { PRODUCT_NAME_MAX_LENGTH, groupProducts, matchesCategory, parseQuantity } from '../../shared/products.ts';
+import { PRODUCT_NAME_MAX_LENGTH, groupProducts, matchesStockFilter, parseQuantity } from '../../shared/products.ts';
 import type { Category, ExtraItem, Purchase, ShoppingListItem, ShoppingListResponse } from '../../shared/types.ts';
 import { h, messageLine, whileSubmitting } from '../dom.ts';
 import { formatQuantity } from '../format.ts';
@@ -76,6 +76,7 @@ export function shoppingView(): HTMLElement {
   const checks = loadChecks();
 
   const filter = categoryFilter(render);
+  filter.element.classList.add('shopping-chips');
   const summary = h('p', { class: 'message' }, 'Chargement…');
   const message = messageLine();
   const products = h('div', { class: 'shopping' });
@@ -129,7 +130,7 @@ export function shoppingView(): HTMLElement {
     filter.update(categories, listed);
     const category = filter.value();
     const groups = groupProducts(
-      listed.filter((product) => matchesCategory(product, category)),
+      listed.filter((product) => matchesStockFilter(product, category)),
       categories,
     );
     products.replaceChildren(
