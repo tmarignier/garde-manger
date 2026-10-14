@@ -233,6 +233,19 @@ export async function adjustProduct(id: number, delta: number): Promise<Product>
   return readProduct(await request('POST', `api/products/${id}/adjust`, { delta }));
 }
 
+// The ids of the products the family adjusts most, most adjusted first.
+export async function listFrequentProductIds(): Promise<number[]> {
+  const data = await request('GET', 'api/products/frequent');
+  if (
+    !isRecord(data) ||
+    !Array.isArray(data['productIds']) ||
+    !data['productIds'].every((id): id is number => typeof id === 'number')
+  ) {
+    throw new Error('Unexpected frequent products response');
+  }
+  return data['productIds'];
+}
+
 // The most recent events of a product, or those older than the event `before`.
 export async function getProductHistory(id: number, before: number | null = null): Promise<ProductHistoryResponse> {
   const query = before === null ? '' : `?before=${before}`;

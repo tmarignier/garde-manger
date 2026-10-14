@@ -13,6 +13,7 @@ import {
 import type {
   CategoriesResponse,
   CategoryResponse,
+  FrequentProductsResponse,
   ProductHistoryResponse,
   ProductRequest,
   ProductResponse,
@@ -21,7 +22,14 @@ import type {
 } from '../shared/types.ts';
 import { transaction } from './database.ts';
 import { HttpError, readObject, readString } from './http.ts';
-import { findProductSnapshot, hasProductEvents, listProductEvents, recordProductEvent } from './product-history.ts';
+import {
+  FREQUENT_DAYS,
+  findProductSnapshot,
+  hasProductEvents,
+  listFrequentProductIds,
+  listProductEvents,
+  recordProductEvent,
+} from './product-history.ts';
 import {
   categoryExists,
   categoryNameExists,
@@ -208,6 +216,15 @@ export const productRoutes: readonly Route[] = [
         recordProductEvent(context.db, id, 'deleted', before, null, user);
       });
       return noContent();
+    },
+  },
+  {
+    method: 'GET',
+    path: '/api/products/frequent',
+    handler: ({ db }) => {
+      const since = new Date(Date.now() - FREQUENT_DAYS * 24 * 60 * 60 * 1000);
+      const response: FrequentProductsResponse = { productIds: listFrequentProductIds(db, since) };
+      return ok(response);
     },
   },
   {

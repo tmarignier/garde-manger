@@ -197,6 +197,12 @@ export type ProductEvent = {
   createdAt: string;
 };
 
+// GET /api/products/frequent: the products the family adjusts most, most
+// adjusted first.
+export type FrequentProductsResponse = {
+  productIds: number[];
+};
+
 // GET /api/products/:id/history: the most recent events first. `hasMore`
 // tells whether older events can be loaded with ?before=<id of the last event>.
 export type ProductHistoryResponse = {

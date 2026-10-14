@@ -5,6 +5,7 @@ import {
   deleteProduct,
   errorMessage,
   listCategories,
+  listFrequentProductIds,
   listProducts,
   renameCategory,
   updateProduct,
@@ -119,6 +120,7 @@ function quantityInput(name: string, value: number | null, required: boolean): H
 export function stockView(): HTMLElement {
   let products: Product[] = [];
   let categories: Category[] = [];
+  let frequentIds: ReadonlySet<number> = new Set();
   let loaded = false;
 
   const search = h('input', {
@@ -143,7 +145,13 @@ export function stockView(): HTMLElement {
 
   async function refresh(): Promise<void> {
     try {
-      [products, categories] = await Promise.all([listProducts(), listCategories()]);
+      let frequent: number[];
+      [products, categories, frequent] = await Promise.all([
+        listProducts(),
+        listCategories(),
+        listFrequentProductIds(),
+      ]);
+      frequentIds = new Set(frequent);
       loaded = true;
       render();
     } catch (error) {
@@ -159,12 +167,12 @@ export function stockView(): HTMLElement {
   function render(): void {
     items.clear();
     if (loaded) {
-      filter.update(categories, products);
+      filter.update(categories, products, frequentIds);
     }
     const query = search.value.trim();
     const current = filter.value();
     const shown = products.filter(
-      (product) => matchesStockFilter(product, current) && matchesSearch(product, query, categoryNameOf(product)),
+      (product) => matchesStockFilter(product, current, frequentIds) && matchesSearch(product, query, categoryNameOf(product)),
     );
     const groups = groupProducts(shown, categories);
     // Left empty when nothing is shown: the list then says why.
@@ -237,7 +245,9 @@ export function stockView(): HTMLElement {
           ? 'Rien à racheter : tout est au-dessus de son seuil minimum.'
           : current === 'out'
             ? 'Aucun produit en rupture.'
-            : 'Aucun produit dans cette catégorie.';
+            : current === 'frequent'
+              ? 'Aucun produit fréquent pour l’instant.'
+              : 'Aucun produit dans cette catégorie.';
       return [h('p', { class: 'message' }, text)];
     }
     if (current !== 'all' && products.some((product) => matchesSearch(product, query, categoryNameOf(product)))) {
@@ -316,7 +326,7 @@ export function stockView(): HTMLElement {
     items.get(product.id)?.replaceWith(productItem(product));
     // Updates the counts of the chips; the list itself is left as is, so that
     // a product does not vanish under the thumb when it leaves the filter.
-    filter.update(categories, products);
+    filter.update(categories, products, frequentIds);
   }
 
   function productItem(product: Product): HTMLLIElement {

@@ -90,15 +90,23 @@ export function isOutOfStock(product: Product): boolean {
 }
 
 // What the stock list is narrowed to: a category, the products below their
-// minimum ('low') or the products out of stock ('out').
-export type StockFilter = CategoryFilter | 'low' | 'out';
+// minimum ('low'), the products out of stock ('out') or the products the
+// family uses most ('frequent', whose ids are given).
+export type StockFilter = CategoryFilter | 'low' | 'out' | 'frequent';
 
-export function matchesStockFilter(product: Product, filter: StockFilter): boolean {
+export function matchesStockFilter(
+  product: Product,
+  filter: StockFilter,
+  frequentIds: ReadonlySet<number> = new Set(),
+): boolean {
   if (filter === 'low') {
     return isBelowMinimum(product);
   }
   if (filter === 'out') {
     return isOutOfStock(product);
+  }
+  if (filter === 'frequent') {
+    return frequentIds.has(product.id);
   }
   return matchesCategory(product, filter);
 }

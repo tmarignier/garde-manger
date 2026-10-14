@@ -16,7 +16,8 @@
 - Modifier ou supprimer un produit, y compris changer sa catégorie.
 - Renommer une catégorie : le nouveau nom s'applique à tous ses produits.
 - Consulter la liste des produits, regroupés par catégorie, une ligne par produit. La recherche par nom et les filtres restent en haut de l'écran pendant qu'on fait défiler la liste ; ils sont conservés quand on passe par la liste de courses.
-- Filtrer d'un toucher : les produits à racheter (sous leur seuil), ceux en rupture (quantité 0), ou une catégorie.
+- Filtrer d'un toucher : les produits fréquents, ceux à racheter (sous leur seuil), ceux en rupture (quantité 0), ou une catégorie.
+- La pastille « Fréquents » montre, sans recherche, les produits que la famille ajuste le plus avec `+` et `−` : au moins deux fois dans les 30 derniers jours, 15 au plus. Elle se remplit à l'usage et n'apparaît qu'une fois qu'il y en a.
 - La recherche trouve tous les mots tapés, dans n'importe quel ordre (« basmati riz » trouve « Riz basmati »), dans le nom du produit ou de sa catégorie (« surgelés » montre toute la catégorie). Sur ordinateur, `/` place le curseur dans la recherche et Échap l'efface.
 - Chaque catégorie affiche son nombre de produits ; toucher son titre la replie. Les catégories repliées sont mémorisées sur chaque appareil, et toujours dépliées pendant une recherche ou un filtre.
 - Le nombre de produits affichés est indiqué en tête de liste, et les produits en rupture (quantité 0) sont signalés à part de ceux à racheter.

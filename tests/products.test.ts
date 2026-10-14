@@ -164,6 +164,14 @@ describe('matchesStockFilter', () => {
     assert.equal(matchesStockFilter(sel, 1), false);
     assert.equal(matchesStockFilter(sel, 'all'), true);
   });
+
+  it('keeps the frequent products given by their ids', () => {
+    const riz = product(1, 'Riz', 1, 1, 2);
+    const sel = product(2, 'Sel', 2, 0, 0);
+    assert.equal(matchesStockFilter(riz, 'frequent', new Set([1])), true);
+    assert.equal(matchesStockFilter(sel, 'frequent', new Set([1])), false);
+    assert.equal(matchesStockFilter(riz, 'frequent'), false);
+  });
 });
 
 describe('groupProducts', () => {
