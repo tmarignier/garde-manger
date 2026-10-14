@@ -167,11 +167,13 @@ export function stockView(): HTMLElement {
       (product) => matchesStockFilter(product, current) && matchesSearch(product, query, categoryNameOf(product)),
     );
     const groups = groupProducts(shown, categories);
-    summary.textContent = !loaded
-      ? ''
-      : shown.length === products.length
-        ? `${countLabel(products.length)} dans le stock.`
-        : `${countLabel(shown.length)} sur ${products.length}.`;
+    // Left empty when nothing is shown: the list then says why.
+    summary.textContent =
+      !loaded || shown.length === 0
+        ? ''
+        : shown.length === products.length
+          ? `${countLabel(products.length)} dans le stock.`
+          : `${countLabel(shown.length)} sur ${products.length}.`;
     // Folding only applies to the whole stock: a search or a filter shows
     // everything it finds.
     const foldable = query === '' && current === 'all';

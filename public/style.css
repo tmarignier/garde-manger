@@ -346,6 +346,10 @@ button.chip[aria-pressed='true'] {
   font-size: 0.875rem;
 }
 
+.summary:empty {
+  display: none;
+}
+
 .category-count {
   margin-left: 0.5rem;
   font-weight: 400;
