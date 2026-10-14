@@ -34,6 +34,7 @@
 - Dès que la quantité passe **sous le seuil**, le produit apparaît automatiquement dans la liste de courses.
 - Chaque produit peut aussi avoir une **quantité cible** (ex. « 4 paquets ») : la liste propose alors d'en acheter la différence. Sans quantité cible, on propose de remonter jusqu'au seuil.
 - Pendant les courses, on coche les produits achetés, en corrigeant si besoin la quantité achetée. Valider les achats ajoute les quantités achetées au stock.
+- Les coches sont gardées et partagées par toute la famille jusqu'à la validation : on peut cocher en passant la commande d'un drive, puis valider à la livraison, depuis n'importe quel téléphone.
 - La liste est regroupée par catégorie, comme le stock, et se manipule d'une main sur le téléphone. Un filtre par catégorie, en pastilles, n'affiche que les produits d'un rayon ; les articles ponctuels restent affichés et les produits cochés hors du filtre sont validés avec les autres.
 - On peut ajouter à la main un article ponctuel à la liste (hors stock suivi).
 

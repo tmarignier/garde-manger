@@ -118,16 +118,20 @@ export type AdjustmentRequest = {
   delta: number;
 };
 
-// A product of the shopping list, with the quantity to buy.
+// A product of the shopping list, with the quantity to buy. boughtQuantity is
+// the quantity checked as bought, shared by the whole family until the
+// purchases are validated, or null when the product is not checked.
 export type ShoppingListItem = {
   product: Product;
   quantityToBuy: number;
+  boughtQuantity: number | null;
 };
 
 // An item added by hand to the shopping list, outside the tracked stock.
 export type ExtraItem = {
   id: number;
   name: string;
+  checked: boolean;
 };
 
 // GET /api/shopping-list and POST /api/shopping-list/purchases.
@@ -138,6 +142,12 @@ export type ShoppingListResponse = {
 
 export type Purchase = {
   productId: number;
+  quantity: number;
+};
+
+// PUT /api/shopping-list/checks/:productId: checks a product as bought, or
+// changes its bought quantity.
+export type ProductCheckRequest = {
   quantity: number;
 };
 

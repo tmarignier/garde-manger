@@ -249,7 +249,12 @@ export async function getProductHistory(id: number, before: number | null = null
 }
 
 function isExtraItem(value: unknown): value is ExtraItem {
-  return isRecord(value) && typeof value['id'] === 'number' && typeof value['name'] === 'string';
+  return (
+    isRecord(value) &&
+    typeof value['id'] === 'number' &&
+    typeof value['name'] === 'string' &&
+    typeof value['checked'] === 'boolean'
+  );
 }
 
 function readShoppingList(data: unknown): ShoppingListResponse {
@@ -257,7 +262,11 @@ function readShoppingList(data: unknown): ShoppingListResponse {
     !isRecord(data) ||
     !Array.isArray(data['items']) ||
     !data['items'].every(
-      (item: unknown) => isRecord(item) && isProduct(item['product']) && typeof item['quantityToBuy'] === 'number',
+      (item: unknown) =>
+        isRecord(item) &&
+        isProduct(item['product']) &&
+        typeof item['quantityToBuy'] === 'number' &&
+        isNumberOrNull(item['boughtQuantity']),
     ) ||
     !Array.isArray(data['extraItems']) ||
     !data['extraItems'].every(isExtraItem)
@@ -273,6 +282,19 @@ export async function getShoppingList(): Promise<ShoppingListResponse> {
 
 export async function validatePurchases(purchases: PurchasesRequest): Promise<ShoppingListResponse> {
   return readShoppingList(await request('POST', 'api/shopping-list/purchases', purchases));
+}
+
+// Checks a product as bought, or changes its bought quantity.
+export async function checkProduct(productId: number, quantity: number): Promise<void> {
+  await request('PUT', `api/shopping-list/checks/${productId}`, { quantity });
+}
+
+export async function uncheckProduct(productId: number): Promise<void> {
+  await request('DELETE', `api/shopping-list/checks/${productId}`);
+}
+
+export async function setExtraItemChecked(id: number, checked: boolean): Promise<void> {
+  await request(checked ? 'PUT' : 'DELETE', `api/extra-items/${id}/check`);
 }
 
 export async function createExtraItem(name: string): Promise<ExtraItem> {

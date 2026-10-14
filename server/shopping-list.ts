@@ -11,9 +11,19 @@ export function quantityToBuy(product: Product): number {
 }
 
 // The products below their minimum, sorted by name, with the quantity to buy.
-export function computeShoppingList(products: readonly Product[]): ShoppingListItem[] {
+// `checks` gives the bought quantity of each checked product: a checked product
+// stays on the list until the purchases are validated, even when it is no
+// longer below its minimum, because it was ordered or is already in the cart.
+export function computeShoppingList(
+  products: readonly Product[],
+  checks: ReadonlyMap<number, number> = new Map(),
+): ShoppingListItem[] {
   return products
-    .filter(isBelowMinimum)
-    .map((product) => ({ product, quantityToBuy: quantityToBuy(product) }))
+    .filter((product) => isBelowMinimum(product) || checks.has(product.id))
+    .map((product) => ({
+      product,
+      quantityToBuy: quantityToBuy(product),
+      boughtQuantity: checks.get(product.id) ?? null,
+    }))
     .sort((a, b) => compareNames(a.product.name, b.product.name));
 }

@@ -123,7 +123,10 @@ products                  produits suivis en stock
   updated_by (user_id), updated_at
 
 extra_items               articles ponctuels ajoutés à la main à la liste de courses
-  id, name
+  id, name, checked (coché, jusqu'à la validation des achats)
+
+shopping_checks           produits cochés dans la liste de courses, jusqu'à la validation
+  product_id (supprimé avec le produit), quantity (quantité achetée)
 
 product_events            historique des modifications des produits
   id, product_id (sans clé étrangère), product_name, user_id, user_name,
@@ -132,13 +135,15 @@ product_events            historique des modifications des produits
   changes (JSON : champs de la fiche changés, avant et après), created_at
 ```
 
-La liste de courses n'est **pas stockée** : elle est calculée à partir des produits dont `quantity < min_quantity`, à laquelle s'ajoutent les articles ponctuels. Quantité à acheter = `target_quantity − quantity` si une cible existe, sinon `min_quantity − quantity`. Le calcul est dans `server/shopping-list.ts`, sans HTTP ni SQLite.
+La liste de courses n'est **pas stockée** : elle est calculée à partir des produits dont `quantity < min_quantity` et des produits cochés, à laquelle s'ajoutent les articles ponctuels. Quantité à acheter = `target_quantity − quantity` si une cible existe, sinon `min_quantity − quantity`. Le calcul est dans `server/shopping-list.ts`, sans HTTP ni SQLite.
 
 ### Courses
 
-- Pendant les courses, les articles cochés et les quantités réellement achetées restent **sur l'appareil** (`localStorage`), jusqu'à la validation. Ils survivent à un rechargement de la page par Safari, mais ne sont pas partagés entre les téléphones.
-- Valider envoie en une fois les quantités achetées et les articles ponctuels cochés. Les quantités s'ajoutent au stock du moment, comme un `+` : un changement fait à la maison pendant les courses est conservé. Les articles ponctuels validés sont retirés de la liste. Tout est enregistré dans une seule transaction.
-- Un produit ou un article ponctuel supprimé entre-temps est ignoré à la validation. Un produit qui a quitté la liste entre-temps (quelqu'un l'a racheté) est décoché sur l'appareil au rechargement de la liste.
+- Les articles cochés et les quantités réellement achetées sont **enregistrés sur le serveur** dès qu'on les touche, et partagés par toute la famille jusqu'à la validation. On peut donc cocher en passant la commande d'un drive, puis valider à la livraison, depuis un autre téléphone ou un autre jour. L'écran recharge la liste quand il redevient visible, ce qui montre les coches faites ailleurs.
+- Un produit coché reste dans la liste jusqu'à la validation, même s'il repasse au-dessus de son seuil entre-temps (quelqu'un en a trouvé à la maison) : il a été commandé ou mis dans le panier, son achat doit être enregistré. Décoché, il quitte la liste s'il n'est plus sous son seuil.
+- Valider envoie en une fois les quantités achetées et les articles ponctuels cochés. Les quantités s'ajoutent au stock du moment, comme un `+` : un changement fait à la maison pendant les courses est conservé. Les coches des produits validés et les articles ponctuels validés sont retirés. Tout est enregistré dans une seule transaction.
+- Un produit ou un article ponctuel supprimé entre-temps est ignoré à la validation ; la coche d'un produit supprimé disparaît avec lui.
+- Jusqu'à la version 1.5.1, les coches restaient sur l'appareil (`localStorage`). À la première ouverture de l'écran Courses avec une version plus récente, celles qui y restent sont envoyées au serveur, puis effacées de l'appareil.
 - La quantité achetée est proposée par défaut et se modifie avant de valider (par exemple un lot de six au lieu de quatre paquets).
 
 ### Historique des produits
@@ -176,9 +181,12 @@ Les tables sont déclarées `STRICT` (SQLite vérifie le type de chaque valeur) 
 | `POST` | `/api/products/:id/adjust` | Ajuster la quantité (`{ "delta": -1 }`) |
 | `GET` | `/api/products/:id/history` | Historique du produit, 50 événements à la fois, du plus récent au plus ancien (`?before=<id>` pour les suivants) : `{ "events": [...], "hasMore": true }`. Fonctionne aussi pour un produit supprimé |
 | `GET` | `/api/shopping-list` | Obtenir la liste de courses calculée |
-| `POST` | `/api/shopping-list/purchases` | Valider des achats (`{ "purchases": [{ "productId": 1, "quantity": 3 }], "extraItemIds": [2] }`) : ajoute les quantités au stock, retire les articles ponctuels, et renvoie la nouvelle liste |
+| `PUT` | `/api/shopping-list/checks/:productId` | Cocher un produit, ou changer sa quantité achetée (`{ "quantity": 6 }`) |
+| `DELETE` | `/api/shopping-list/checks/:productId` | Décocher un produit (sans erreur s'il ne l'était pas) |
+| `POST` | `/api/shopping-list/purchases` | Valider des achats (`{ "purchases": [{ "productId": 1, "quantity": 3 }], "extraItemIds": [2] }`) : ajoute les quantités au stock, retire les coches de ces produits et les articles ponctuels, et renvoie la nouvelle liste |
 | `POST` | `/api/extra-items` | Ajouter un article ponctuel (`{ "name": "Bougies" }`) |
 | `DELETE` | `/api/extra-items/:id` | Retirer un article ponctuel |
+| `PUT` / `DELETE` | `/api/extra-items/:id/check` | Cocher ou décocher un article ponctuel |
 | `GET` / `POST` | `/api/categories` | Lister ou ajouter des catégories |
 | `PUT` | `/api/categories/:id` | Renommer une catégorie (`{ "name": "Épicerie salée" }`) ; 409 si une autre catégorie porte déjà ce nom |
 
@@ -205,6 +213,7 @@ server/                 exécuté directement par Node.js
   product-routes.ts     routes de l'API pour les produits et catégories
   product-history.ts    lecture et écriture de l'historique des produits en base
   extra-items.ts        lecture et écriture des articles ponctuels en base
+  shopping-checks.ts    lecture et écriture des produits cochés en base
   shopping-list-routes.ts  routes de l'API pour la liste de courses et les achats
 client/                 compilé par tsc vers public/js/client/
   app.ts                point d'entrée de l'interface

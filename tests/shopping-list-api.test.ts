@@ -73,6 +73,8 @@ describe('shopping list API', () => {
     assert.equal((await anonymous.request('GET', '/api/shopping-list')).status, 401);
     assert.equal((await anonymous.request('POST', '/api/extra-items', { name: 'Bougies' })).status, 401);
     assert.equal((await purchase(anonymous, { purchases: [] })).status, 401);
+    assert.equal((await anonymous.request('PUT', '/api/shopping-list/checks/1', { quantity: 1 })).status, 401);
+    assert.equal((await anonymous.request('PUT', '/api/extra-items/1/check')).status, 401);
   });
 
   it('lists the products below their minimum with the quantity to buy', async () => {
@@ -81,10 +83,10 @@ describe('shopping list API', () => {
     await createProduct({ name: 'Sel', quantity: 3, minQuantity: 1 });
     const list = await getList(member);
     assert.deepEqual(
-      list.items.map((item) => [item.product.id, item.quantityToBuy]),
+      list.items.map((item) => [item.product.id, item.quantityToBuy, item.boughtQuantity]),
       [
-        [pasta.id, 4],
-        [rice.id, 1],
+        [pasta.id, 4, null],
+        [rice.id, 1, null],
       ],
     );
     assert.deepEqual(list.extraItems, []);
@@ -183,5 +185,80 @@ describe('shopping list API', () => {
       assert.equal((await purchase(member, body)).status, 400, JSON.stringify(body));
     }
     assert.equal(await quantityOf(pasta.id), 0);
+  });
+
+  it('shares checks between devices until the purchases are validated', async () => {
+    const pasta = await createProduct({ name: 'Pâtes', quantity: 0, minQuantity: 2 });
+    const rice = await createProduct({ name: 'Riz', quantity: 0, minQuantity: 1 });
+    const candles = await addExtraItem(admin, 'Bougies');
+    const cake = await addExtraItem(admin, 'Gâteau');
+    assert.equal(candles.checked, false);
+
+    // Checked while ordering on the drive website…
+    assert.equal((await admin.request('PUT', `/api/shopping-list/checks/${pasta.id}`, { quantity: 2 })).status, 204);
+    assert.equal((await admin.request('PUT', `/api/shopping-list/checks/${pasta.id}`, { quantity: 6 })).status, 204);
+    assert.equal((await admin.request('PUT', `/api/shopping-list/checks/${rice.id}`, { quantity: 1 })).status, 204);
+    assert.equal((await admin.request('DELETE', `/api/shopping-list/checks/${rice.id}`)).status, 204);
+    assert.equal((await admin.request('DELETE', `/api/shopping-list/checks/${rice.id}`)).status, 204);
+    assert.equal((await admin.request('PUT', `/api/extra-items/${candles.id}/check`)).status, 204);
+
+    // …and seen on another phone at delivery.
+    const list = await getList(member);
+    assert.deepEqual(
+      list.items.map((item) => [item.product.name, item.boughtQuantity]),
+      [
+        ['Pâtes', 6],
+        ['Riz', null],
+      ],
+    );
+    assert.deepEqual(list.extraItems, [{ ...candles, checked: true }, cake]);
+
+    const response = await purchase(member, {
+      purchases: [{ productId: pasta.id, quantity: 6 }],
+      extraItemIds: [candles.id],
+    });
+    assert.equal(response.status, 200);
+    const after = await getList(admin);
+    assert.deepEqual(
+      after.items.map((item) => [item.product.name, item.boughtQuantity]),
+      [['Riz', null]],
+    );
+    assert.deepEqual(after.extraItems, [cake]);
+    assert.equal(await quantityOf(pasta.id), 6);
+  });
+
+  it('keeps a checked product on the list when it is no longer below its minimum', async () => {
+    const pasta = await createProduct({ name: 'Pâtes', quantity: 0, minQuantity: 2 });
+    assert.equal((await member.request('PUT', `/api/shopping-list/checks/${pasta.id}`, { quantity: 2 })).status, 204);
+    // Someone at home found packets before the order was delivered.
+    await admin.request('POST', `/api/products/${pasta.id}/adjust`, { delta: 3 });
+    assert.deepEqual(
+      (await getList(member)).items.map((item) => [item.product.name, item.quantityToBuy, item.boughtQuantity]),
+      [['Pâtes', 0, 2]],
+    );
+    // Unchecked, it leaves the list.
+    assert.equal((await member.request('DELETE', `/api/shopping-list/checks/${pasta.id}`)).status, 204);
+    assert.deepEqual((await getList(member)).items, []);
+  });
+
+  it('forgets the check of a deleted product', async () => {
+    const pasta = await createProduct({ name: 'Pâtes' });
+    assert.equal((await member.request('PUT', `/api/shopping-list/checks/${pasta.id}`, { quantity: 2 })).status, 204);
+    assert.equal((await admin.request('DELETE', `/api/products/${pasta.id}`)).status, 204);
+    assert.deepEqual((await getList(member)).items, []);
+  });
+
+  it('validates checks', async () => {
+    const pasta = await createProduct({ name: 'Pâtes' });
+    const invalid = [undefined, {}, { quantity: 0 }, { quantity: -1 }, { quantity: 0.0001 }, { quantity: '2' }, { quantity: 1e9 }];
+    for (const body of invalid) {
+      const response = await member.request('PUT', `/api/shopping-list/checks/${pasta.id}`, body);
+      assert.equal(response.status, 400, JSON.stringify(body));
+    }
+    assert.equal((await member.request('PUT', '/api/shopping-list/checks/999', { quantity: 1 })).status, 404);
+    assert.equal((await member.request('PUT', '/api/shopping-list/checks/abc', { quantity: 1 })).status, 404);
+    assert.equal((await member.request('PUT', '/api/extra-items/999/check')).status, 404);
+    assert.equal((await member.request('DELETE', '/api/extra-items/999/check')).status, 404);
+    assert.equal((await getList(member)).items[0]?.boughtQuantity, null);
   });
 });

@@ -1,5 +1,11 @@
 # Journal des versions
 
+## 1.6.0
+
+- Les cases cochées de l'écran Courses et les quantités achetées sont gardées jusqu'à « Valider les achats », et partagées par toute la famille : on peut cocher en passant la commande d'un drive, puis valider à la livraison, depuis n'importe quel téléphone.
+- Un produit coché reste dans la liste jusqu'à la validation, même si quelqu'un en retrouve à la maison entre-temps.
+- Les coches faites avec la version précédente sur un téléphone sont reprises à la première ouverture de l'écran Courses.
+
 ## 1.5.1
 
 - « Mon compte », « Comptes » et « Se déconnecter » passent en bas de l'écran, au-dessus de la version. En haut, il ne reste que Stock et Courses.

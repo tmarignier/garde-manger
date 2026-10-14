@@ -88,6 +88,17 @@ export const migrations: readonly string[] = [
   CREATE INDEX product_events_product_id ON product_events (product_id, id);
   CREATE INDEX product_events_user_id ON product_events (user_id);
   `,
+  // Checks are kept by the server until the purchases are validated, so that
+  // they survive from the drive order to its delivery and are shared between
+  // phones. A checked product keeps its check even when it leaves the list.
+  `
+  CREATE TABLE shopping_checks (
+    product_id INTEGER PRIMARY KEY REFERENCES products (id) ON DELETE CASCADE,
+    quantity REAL NOT NULL CHECK (quantity > 0)
+  ) STRICT;
+
+  ALTER TABLE extra_items ADD COLUMN checked INTEGER NOT NULL DEFAULT 0 CHECK (checked IN (0, 1));
+  `,
 ];
 
 export function getSchemaVersion(db: DatabaseSync): number {
