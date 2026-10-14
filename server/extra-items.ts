@@ -8,22 +8,28 @@ function rowToExtraItem(row: unknown): ExtraItem {
     !('id' in row) ||
     typeof row.id !== 'number' ||
     !('name' in row) ||
-    typeof row.name !== 'string'
+    typeof row.name !== 'string' ||
+    !('checked' in row) ||
+    typeof row.checked !== 'number'
   ) {
     throw new Error('Unexpected extra item row');
   }
-  return { id: row.id, name: row.name };
+  return { id: row.id, name: row.name, checked: row.checked === 1 };
 }
 
 // Extra items in the order they were added.
 export function listExtraItems(db: DatabaseSync): ExtraItem[] {
-  return db.prepare('SELECT id, name FROM extra_items ORDER BY id').all().map(rowToExtraItem);
+  return db.prepare('SELECT id, name, checked FROM extra_items ORDER BY id').all().map(rowToExtraItem);
 }
 
 export function insertExtraItem(db: DatabaseSync, name: string): ExtraItem {
-  return rowToExtraItem(db.prepare('INSERT INTO extra_items (name) VALUES (?) RETURNING id, name').get(name));
+  return rowToExtraItem(db.prepare('INSERT INTO extra_items (name) VALUES (?) RETURNING id, name, checked').get(name));
 }
 
 export function deleteExtraItem(db: DatabaseSync, id: number): boolean {
   return db.prepare('DELETE FROM extra_items WHERE id = ?').run(id).changes > 0;
+}
+
+export function setExtraItemChecked(db: DatabaseSync, id: number, checked: boolean): boolean {
+  return db.prepare('UPDATE extra_items SET checked = ? WHERE id = ?').run(checked ? 1 : 0, id).changes > 0;
 }

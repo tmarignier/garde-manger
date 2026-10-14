@@ -16,7 +16,15 @@ function tableNames(db: DatabaseSync): string[] {
 describe('openDatabase', () => {
   it('creates every table of the data model', () => {
     const db = openDatabase(':memory:');
-    assert.deepEqual(tableNames(db), ['categories', 'extra_items', 'product_events', 'products', 'sessions', 'users']);
+    assert.deepEqual(tableNames(db), [
+      'categories',
+      'extra_items',
+      'product_events',
+      'products',
+      'sessions',
+      'shopping_checks',
+      'users',
+    ]);
     assert.equal(getSchemaVersion(db), migrations.length);
     db.close();
   });
@@ -58,6 +66,21 @@ describe('migrate', () => {
     assert.throws(() => migrate(db, ['CREATE TABLE a (id INTEGER); CREATE TABLE a (id INTEGER)']));
     assert.equal(getSchemaVersion(db), 0);
     assert.deepEqual(tableNames(db), []);
+    db.close();
+  });
+
+  it('keeps existing products and extra items when adding shopping checks', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA foreign_keys = ON');
+    migrate(db, migrations.slice(0, 5));
+    db.exec("INSERT INTO products (name, quantity, min_quantity) VALUES ('Pâtes', 0, 2)");
+    db.exec("INSERT INTO extra_items (name) VALUES ('Bougies')");
+    migrate(db);
+    assert.deepEqual({ ...db.prepare('SELECT name, checked FROM extra_items').get() }, { name: 'Bougies', checked: 0 });
+    db.exec('INSERT INTO shopping_checks (product_id, quantity) VALUES (1, 2)');
+    assert.throws(() => db.exec('INSERT INTO shopping_checks (product_id, quantity) VALUES (999, 1)'), /FOREIGN KEY/);
+    db.exec('DELETE FROM products');
+    assert.deepEqual(db.prepare('SELECT * FROM shopping_checks').all(), []);
     db.close();
   });
 

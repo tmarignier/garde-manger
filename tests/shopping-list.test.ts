@@ -57,4 +57,26 @@ describe('computeShoppingList', () => {
   it('leaves out products without a minimum', () => {
     assert.deepEqual(computeShoppingList([product('Sel', 0, 0)]), []);
   });
+
+  it('gives the bought quantity of checked products and keeps them on the list', () => {
+    const pasta = product('Pâtes', 1, 2, 4);
+    const rice = product('Riz', 0, 1);
+    // Bought at the shop, then someone at home found a box.
+    const coffee = product('Café', 3, 1);
+    const list = computeShoppingList(
+      [coffee, pasta, rice],
+      new Map([
+        [pasta.id, 6],
+        [coffee.id, 1],
+      ]),
+    );
+    assert.deepEqual(
+      list.map((item) => [item.product.name, item.quantityToBuy, item.boughtQuantity]),
+      [
+        ['Café', 0, 1],
+        ['Pâtes', 3, 6],
+        ['Riz', 1, null],
+      ],
+    );
+  });
 });
