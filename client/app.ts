@@ -8,7 +8,8 @@ import { shoppingView } from './views/shopping.ts';
 import { stockView } from './views/stock.ts';
 import { usersView } from './views/users.ts';
 
-// Screens of the logged-in app, chosen by the URL hash.
+// Screens of the logged-in app, chosen by the URL hash. The main ones are
+// linked at the top, the account ones in the footer.
 const pages = {
   stock: { hash: '#/', label: 'Stock' },
   shopping: { hash: '#/shopping-list', label: 'Courses' },
@@ -17,6 +18,9 @@ const pages = {
 } as const;
 
 type Page = keyof typeof pages;
+
+const mainPages: readonly Page[] = ['stock', 'shopping'];
+const accountPages: readonly Page[] = ['account', 'users'];
 
 function currentPage(user: User): Page {
   if (location.hash === pages.shopping.hash) {
@@ -44,28 +48,31 @@ function pageView(page: Page, user: User): HTMLElement {
   }
 }
 
-function createApp(root: HTMLElement): void {
+function pageLinks(keys: readonly Page[], current: Page, user: User): HTMLAnchorElement[] {
+  return keys
+    .filter((key) => key !== 'users' || user.isAdmin)
+    .map((key) => h('a', { href: pages[key].hash, 'aria-current': key === current ? 'page' : undefined }, pages[key].label));
+}
+
+function createApp(root: HTMLElement, accountLinks: HTMLElement | null): void {
   let user: User | null = null;
 
   function show(...content: Node[]): void {
     root.replaceChildren(...content);
+    accountLinks?.replaceChildren();
   }
 
   function showLoggedIn(loggedIn: User): void {
     user = loggedIn;
     const page = currentPage(loggedIn);
-    const links = (Object.keys(pages) as Page[])
-      .filter((key) => key !== 'users' || loggedIn.isAdmin)
-      .map((key) =>
-        h('a', { href: pages[key].hash, 'aria-current': key === page ? 'page' : undefined }, pages[key].label),
-      );
     const logoutButton = h('button', { type: 'button', class: 'link' }, 'Se déconnecter');
     logoutButton.addEventListener('click', () => {
       void logOut()
         .catch(() => {})
         .then(showLogin);
     });
-    show(h('nav', {}, ...links, logoutButton), pageView(page, loggedIn));
+    show(h('nav', { class: 'main-nav' }, ...pageLinks(mainPages, page, loggedIn)), pageView(page, loggedIn));
+    accountLinks?.replaceChildren(...pageLinks(accountPages, page, loggedIn), logoutButton);
   }
 
   function showLogin(): void {
@@ -103,17 +110,17 @@ function createApp(root: HTMLElement): void {
 
 // The footer stays empty when the server cannot be reached: the main screen
 // already says so.
-async function showVersion(footer: HTMLElement): Promise<void> {
+async function showVersion(element: HTMLElement): Promise<void> {
   const { version } = await getHealth();
-  footer.textContent = `Version ${version}`;
+  element.textContent = `Version ${version}`;
 }
 
-const footer = document.querySelector<HTMLElement>('#version');
-if (footer !== null) {
-  void showVersion(footer).catch(() => {});
+const version = document.querySelector<HTMLElement>('#version');
+if (version !== null) {
+  void showVersion(version).catch(() => {});
 }
 
 const root = document.querySelector<HTMLElement>('#app');
 if (root !== null) {
-  createApp(root);
+  createApp(root, document.querySelector<HTMLElement>('#account-links'));
 }
