@@ -106,6 +106,20 @@ describe('matchesSearch', () => {
     assert.equal(matchesSearch(pates, ''), true);
     assert.equal(matchesSearch(pates, 'riz'), false);
   });
+
+  it('finds every word in any order', () => {
+    const riz = product(1, 'Riz basmati', null);
+    assert.equal(matchesSearch(riz, 'basmati riz'), true);
+    assert.equal(matchesSearch(riz, '  riz   bas '), true);
+    assert.equal(matchesSearch(riz, 'riz rond'), false);
+  });
+
+  it('also looks in the category name', () => {
+    const pois = product(1, 'Petits pois', 1);
+    assert.equal(matchesSearch(pois, 'surgeles', 'Surgelés'), true);
+    assert.equal(matchesSearch(pois, 'pois surgelés', 'Surgelés'), true);
+    assert.equal(matchesSearch(pois, 'surgelés'), false);
+  });
 });
 
 describe('matchesCategory', () => {
