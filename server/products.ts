@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { nameKey } from '../shared/accounts.ts';
-import type { Category, Product, ProductRequest, UpdateProductRequest } from '../shared/types.ts';
+import type { Category, Product, ProductRequest, ShopLink, UpdateProductRequest } from '../shared/types.ts';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -61,7 +61,42 @@ const PRODUCT_SELECT = `
     products.min_quantity, products.target_quantity, users.name AS updated_by_name, products.updated_at
   FROM products LEFT JOIN users ON users.id = products.updated_by`;
 
-function rowToProduct(row: unknown): Product {
+function rowToShopLink(row: unknown): ShopLink & { productId: number } {
+  if (
+    !isRecord(row) ||
+    typeof row['product_id'] !== 'number' ||
+    typeof row['label'] !== 'string' ||
+    typeof row['url'] !== 'string'
+  ) {
+    throw new Error('Unexpected shop link row');
+  }
+  return { productId: row['product_id'], label: row['label'], url: row['url'] };
+}
+
+// The shop links of every product, or of one product, in their order.
+function listShopLinks(db: DatabaseSync, productId: number | null = null): Map<number, ShopLink[]> {
+  const rows =
+    productId === null
+      ? db.prepare('SELECT product_id, label, url FROM shop_links ORDER BY product_id, position').all()
+      : db.prepare('SELECT product_id, label, url FROM shop_links WHERE product_id = ? ORDER BY position').all(productId);
+  const byProductId = new Map<number, ShopLink[]>();
+  for (const row of rows) {
+    const { productId: id, label, url } = rowToShopLink(row);
+    const links = byProductId.get(id) ?? [];
+    links.push({ label, url });
+    byProductId.set(id, links);
+  }
+  return byProductId;
+}
+
+// Replaces the shop links of a product. Call it in a transaction.
+function setShopLinks(db: DatabaseSync, productId: number, links: readonly ShopLink[]): void {
+  db.prepare('DELETE FROM shop_links WHERE product_id = ?').run(productId);
+  const insert = db.prepare('INSERT INTO shop_links (product_id, position, label, url) VALUES (?, ?, ?, ?)');
+  links.forEach((link, position) => insert.run(productId, position, link.label, link.url));
+}
+
+function rowToProduct(row: unknown, shopLinks: Map<number, ShopLink[]>): Product {
   if (
     !isRecord(row) ||
     typeof row['id'] !== 'number' ||
@@ -84,22 +119,28 @@ function rowToProduct(row: unknown): Product {
     quantity: row['quantity'],
     minQuantity: row['min_quantity'],
     targetQuantity: row['target_quantity'],
+    shopLinks: shopLinks.get(row['id']) ?? [],
     updatedByName: row['updated_by_name'],
     updatedAt: row['updated_at'],
   };
 }
 
 export function listProducts(db: DatabaseSync): Product[] {
-  return db.prepare(`${PRODUCT_SELECT} ORDER BY products.name`).all().map(rowToProduct);
+  const shopLinks = listShopLinks(db);
+  return db
+    .prepare(`${PRODUCT_SELECT} ORDER BY products.name`)
+    .all()
+    .map((row) => rowToProduct(row, shopLinks));
 }
 
 export function findProduct(db: DatabaseSync, id: number): Product | null {
   const row: unknown = db.prepare(`${PRODUCT_SELECT} WHERE products.id = ?`).get(id);
-  return row === undefined ? null : rowToProduct(row);
+  return row === undefined ? null : rowToProduct(row, listShopLinks(db, id));
 }
 
 // The id is never one of a deleted product, which SQLite could otherwise
-// reuse: the new product would inherit the deleted one's history.
+// reuse: the new product would inherit the deleted one's history. Call it in a
+// transaction, with the shop links.
 export function insertProduct(db: DatabaseSync, product: ProductRequest, userId: number, now = new Date()): Product {
   const result = db
     .prepare(
@@ -119,15 +160,17 @@ export function insertProduct(db: DatabaseSync, product: ProductRequest, userId:
       userId,
       now.toISOString(),
     );
-  const created = findProduct(db, Number(result.lastInsertRowid));
+  const id = Number(result.lastInsertRowid);
+  setShopLinks(db, id, product.shopLinks ?? []);
+  const created = findProduct(db, id);
   if (created === null) {
     throw new Error('Inserted product not found');
   }
   return created;
 }
 
-// Returns false when the product does not exist. Without a quantity, the
-// stored quantity is kept.
+// Returns false when the product does not exist. Without a quantity or shop
+// links, the stored ones are kept. Call it in a transaction.
 export function updateProduct(
   db: DatabaseSync,
   id: number,
@@ -152,7 +195,13 @@ export function updateProduct(
       now.toISOString(),
       id,
     );
-  return result.changes > 0;
+  if (result.changes === 0) {
+    return false;
+  }
+  if (product.shopLinks !== undefined) {
+    setShopLinks(db, id, product.shopLinks);
+  }
+  return true;
 }
 
 export function updateQuantity(db: DatabaseSync, id: number, quantity: number, userId: number, now = new Date()): void {

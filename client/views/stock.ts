@@ -13,6 +13,9 @@ import { nameKey } from '../../shared/accounts.ts';
 import {
   CATEGORY_NAME_MAX_LENGTH,
   PRODUCT_NAME_MAX_LENGTH,
+  SHOP_LINKS_MAX,
+  SHOP_LINK_LABEL_MAX_LENGTH,
+  SHOP_URL_MAX_LENGTH,
   UNIT_MAX_LENGTH,
   groupProducts,
   isBelowMinimum,
@@ -21,9 +24,10 @@ import {
   matchesSearch,
   matchesStockFilter,
   parseQuantity,
+  parseShopUrl,
   type StockFilter,
 } from '../../shared/products.ts';
-import type { Category, Product, ProductRequest } from '../../shared/types.ts';
+import type { Category, Product, ProductRequest, ShopLink } from '../../shared/types.ts';
 import { field, h, messageLine, whileSubmitting } from '../dom.ts';
 import { formatQuantity, formatTime } from '../format.ts';
 import { categoryFilter } from './category-filter.ts';
@@ -444,6 +448,7 @@ export function stockView(): HTMLElement {
     const quantity = quantityInput('quantity', product?.quantity ?? 0, true);
     const minQuantity = quantityInput('min-quantity', product?.minQuantity ?? 1, true);
     const targetQuantity = quantityInput('target-quantity', product?.targetQuantity ?? null, false);
+    const shopLinks = shopLinksEditor(product?.shopLinks ?? []);
     const formMessage = messageLine();
     const cancel = h('button', { type: 'button', class: 'secondary' }, 'Annuler');
     const remove = product === null ? null : h('button', { type: 'button', class: 'danger' }, 'Supprimer');
@@ -463,6 +468,7 @@ export function stockView(): HTMLElement {
       h('p', { class: 'hint' }, 'Sous le seuil minimum, le produit passe dans la liste de courses.'),
       field('Quantité cible (facultatif)', targetQuantity),
       h('p', { class: 'hint' }, 'La quantité à avoir après les courses. Sans cible, on remonte jusqu’au seuil.'),
+      shopLinks.element,
       h('div', { class: 'actions' }, h('button', { type: 'submit' }, 'Enregistrer'), cancel, remove),
       formMessage.element,
     );
@@ -502,6 +508,11 @@ export function stockView(): HTMLElement {
         formMessage.show('La quantité cible ne peut pas être inférieure au seuil minimum.');
         return;
       }
+      const shopLinksValue = shopLinks.read();
+      if (shopLinksValue === null) {
+        formMessage.show('Chaque lien de commande doit être une adresse web, par exemple https://lafourche.fr/…');
+        return;
+      }
       // An untouched quantity is not sent, so that a + or − made meanwhile on
       // another device is kept.
       const quantityChanged = product === null || quantity.value !== quantity.defaultValue;
@@ -514,6 +525,7 @@ export function stockView(): HTMLElement {
             quantity: quantityValue,
             minQuantity: minQuantityValue,
             targetQuantity: targetValue,
+            shopLinks: shopLinksValue,
           };
           if (product === null) {
             const saved = await createProduct(request);
@@ -536,6 +548,94 @@ export function stockView(): HTMLElement {
       });
     });
     return form;
+  }
+
+  // The links of the product form: one row per reference of the product on an
+  // online shop, with a name to tell them apart.
+  function shopLinksEditor(initial: readonly ShopLink[]): {
+    element: HTMLFieldSetElement;
+    read: () => ShopLink[] | null;
+  } {
+    const rows = h('div', { class: 'shop-link-rows' });
+    const add = h('button', { type: 'button', class: 'link' }, '+ Ajouter un lien');
+
+    function updateAdd(): void {
+      add.hidden = rows.children.length >= SHOP_LINKS_MAX;
+    }
+
+    function addRow(link: ShopLink | null): void {
+      const label = h('input', {
+        type: 'text',
+        name: 'shop-link-label',
+        maxlength: String(SHOP_LINK_LABEL_MAX_LENGTH),
+        autocomplete: 'off',
+        autocapitalize: 'sentences',
+        placeholder: 'Nom, par exemple Barilla 500 g',
+        'aria-label': 'Nom de la référence',
+        value: link?.label ?? '',
+      });
+      const url = h('input', {
+        type: 'text',
+        inputmode: 'url',
+        autocapitalize: 'none',
+        spellcheck: 'false',
+        name: 'shop-link-url',
+        maxlength: String(SHOP_URL_MAX_LENGTH),
+        autocomplete: 'off',
+        placeholder: 'https://lafourche.fr/…',
+        'aria-label': 'Adresse de la fiche du produit',
+        value: link?.url ?? '',
+      });
+      const remove = h('button', { type: 'button', class: 'link remove' }, 'Retirer');
+      const row = h('div', { class: 'shop-link-row' }, label, url, remove);
+      remove.addEventListener('click', () => {
+        row.remove();
+        updateAdd();
+      });
+      rows.append(row);
+      updateAdd();
+    }
+
+    for (const link of initial) {
+      addRow(link);
+    }
+    add.addEventListener('click', () => {
+      addRow(null);
+      rows.lastElementChild?.querySelector('input')?.focus();
+    });
+
+    // Rows without an address are left out. Returns null when an address is invalid.
+    function read(): ShopLink[] | null {
+      const links: ShopLink[] = [];
+      for (const row of rows.children) {
+        const [label, url] = [...row.querySelectorAll('input')];
+        if (label === undefined || url === undefined || url.value.trim() === '') {
+          continue;
+        }
+        const parsed = parseShopUrl(url.value);
+        if (parsed === null) {
+          url.focus();
+          return null;
+        }
+        links.push({ label: label.value.trim(), url: parsed });
+      }
+      return links;
+    }
+
+    const element = h(
+      'fieldset',
+      { class: 'shop-links-field' },
+      h('legend', {}, 'Liens de commande en ligne (facultatif)'),
+      h(
+        'p',
+        { class: 'hint' },
+        'La fiche du produit sur le site où vous commandez (La Fourche, un drive…), une par référence achetée. ',
+        'Dans la liste de courses, un bouton ouvre chaque fiche pour l’ajouter au panier.',
+      ),
+      rows,
+      add,
+    );
+    return { element, read };
   }
 
   // The category picked in the product form, created first when it is new. A

@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 1.7.0
+
+- Chaque produit peut avoir des liens de commande en ligne, par exemple ses fiches sur La Fourche : un par référence achetée (marque, format), avec un nom. Dans la liste de courses, un bouton par lien ouvre la fiche pour l'ajouter au panier.
+
 ## 1.6.0
 
 - Les cases cochées de l'écran Courses et les quantités achetées sont gardées jusqu'à « Valider les achats », et partagées par toute la famille : on peut cocher en passant la commande d'un drive, puis valider à la livraison, depuis n'importe quel téléphone.

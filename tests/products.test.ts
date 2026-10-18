@@ -13,6 +13,9 @@ import {
   matchesStockFilter,
   normalizeText,
   parseQuantity,
+  parseShopUrl,
+  shopLinkText,
+  shopName,
 } from '../shared/products.ts';
 import type { Category, Product } from '../shared/types.ts';
 
@@ -25,6 +28,7 @@ function product(id: number, name: string, categoryId: number | null, quantity =
     quantity,
     minQuantity,
     targetQuantity: null,
+    shopLinks: [],
     updatedByName: 'Léa',
     updatedAt: '2026-10-09T20:00:00.000Z',
   };
@@ -191,5 +195,32 @@ describe('groupProducts', () => {
   it('puts products of an unknown category with the uncategorized ones', () => {
     const groups = groupProducts([product(1, 'Thé', 99)], categories);
     assert.deepEqual(groups.map((group) => group.category), [null]);
+  });
+});
+
+describe('parseShopUrl', () => {
+  it('accepts web links', () => {
+    assert.equal(parseShopUrl(' https://www.lafourche.fr/products/pates '), 'https://www.lafourche.fr/products/pates');
+    assert.equal(parseShopUrl('http://drive.example/p?id=3'), 'http://drive.example/p?id=3');
+    assert.equal(parseShopUrl('lafourche.fr/products/pates'), 'https://lafourche.fr/products/pates');
+  });
+
+  it('refuses anything else', () => {
+    const invalid = ['', 'pates', 'https://', 'javascript:alert(1)', 'data:text/html,x', `https://a.fr/${'x'.repeat(2000)}`];
+    for (const text of invalid) {
+      assert.equal(parseShopUrl(text), null, text);
+    }
+  });
+});
+
+describe('shopName', () => {
+  it('names the shop by its domain', () => {
+    assert.equal(shopName('https://www.lafourche.fr/products/pates'), 'lafourche.fr');
+    assert.equal(shopName('https://drive.example/p'), 'drive.example');
+  });
+
+  it('names a link by its label and shop', () => {
+    assert.equal(shopLinkText({ label: '', url: 'https://www.lafourche.fr/p' }), 'Ouvrir sur lafourche.fr');
+    assert.equal(shopLinkText({ label: 'Barilla 500 g', url: 'https://lafourche.fr/p' }), 'Barilla 500 g · lafourche.fr');
   });
 });

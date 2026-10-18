@@ -37,6 +37,7 @@
 - Les coches sont gardées et partagées par toute la famille jusqu'à la validation : on peut cocher en passant la commande d'un drive, puis valider à la livraison, depuis n'importe quel téléphone.
 - La liste est regroupée par catégorie, comme le stock, et se manipule d'une main sur le téléphone. Un filtre par catégorie, en pastilles, n'affiche que les produits d'un rayon ; les articles ponctuels restent affichés et les produits cochés hors du filtre sont validés avec les autres.
 - On peut ajouter à la main un article ponctuel à la liste (hors stock suivi).
+- Chaque produit peut avoir des **liens de commande en ligne** : l'adresse de sa fiche sur le site où l'on commande (La Fourche, un drive…), une par référence achetée (marque, format), avec un nom pour les distinguer (« Barilla 500 g »). Dans la liste de courses, un bouton par lien (« Barilla 500 g · lafourche.fr ↗ ») ouvre la fiche dans un nouvel onglet pour l'ajouter au panier ; on revient ensuite cocher le produit. L'application ne remplit pas le panier elle-même et ne passe jamais commande.
 
 ## Plus tard (idées, non prioritaires)
 

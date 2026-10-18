@@ -10,8 +10,21 @@ import {
   uncheckProduct,
   validatePurchases,
 } from '../api.ts';
-import { PRODUCT_NAME_MAX_LENGTH, groupProducts, matchesStockFilter, parseQuantity } from '../../shared/products.ts';
-import type { Category, ExtraItem, Purchase, ShoppingListItem, ShoppingListResponse } from '../../shared/types.ts';
+import {
+  PRODUCT_NAME_MAX_LENGTH,
+  groupProducts,
+  matchesStockFilter,
+  parseQuantity,
+  shopLinkText,
+} from '../../shared/products.ts';
+import type {
+  Category,
+  ExtraItem,
+  Purchase,
+  ShopLink,
+  ShoppingListItem,
+  ShoppingListResponse,
+} from '../../shared/types.ts';
 import { h, messageLine, whileSubmitting } from '../dom.ts';
 import { formatQuantity } from '../format.ts';
 import { categoryFilter } from './category-filter.ts';
@@ -235,6 +248,9 @@ export function shoppingView(): HTMLElement {
         // Nothing left to buy when someone found some at home after it was checked.
         h('span', { class: 'item-quantity' }, quantityToBuy > 0 ? withUnit(quantityToBuy, product.unit) : ''),
       ),
+      product.shopLinks.length === 0
+        ? null
+        : h('div', { class: 'shop-links' }, ...product.shopLinks.map((link) => shopLink(link, product.name))),
       checks.products.has(product.id) ? boughtQuantity(product.id, product.name, product.unit) : null,
     );
     checkbox.addEventListener('change', () => {
@@ -243,6 +259,17 @@ export function shoppingView(): HTMLElement {
       updateValidateButton();
     });
     return li;
+  }
+
+  // Opens the product's page on the online shop in a new tab, to add it to the
+  // cart there. Coming back to the list, a tap checks it as ordered.
+  function shopLink(link: ShopLink, name: string): HTMLAnchorElement {
+    const text = shopLinkText(link);
+    return h(
+      'a',
+      { class: 'shop-link', href: link.url, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `${text} : ${name}` },
+      `${text} ↗`,
+    );
   }
 
   // The quantity actually bought, the proposed one by default: the shop may
