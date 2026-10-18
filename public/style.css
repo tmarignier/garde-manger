@@ -232,6 +232,15 @@ button.link {
   scrollbar-width: none;
 }
 
+/* A mouse can't swipe a row sideways and its scrollbar is hidden: the chips
+   wrap onto several lines instead. */
+@media (hover: hover) and (pointer: fine) {
+  .chips {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
 .shopping-chips {
   margin-bottom: 1rem;
 }

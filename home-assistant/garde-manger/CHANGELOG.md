@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 1.9.1
+
+- Sur ordinateur, les pastilles de filtre du stock passent à la ligne au lieu de dépasser à droite : elles sont toutes accessibles à la souris. Sur téléphone, la rangée se fait toujours glisser du doigt.
+
 ## 1.9.0
 
 - Nouvelle pastille « Sans lien » dans le stock : les produits qui n'ont pas encore de lien de commande en ligne. Toucher un produit ouvre son formulaire sur un lien vide, prêt à coller l'adresse.
