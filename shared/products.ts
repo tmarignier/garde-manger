@@ -121,9 +121,14 @@ export function isOutOfStock(product: Product): boolean {
   return product.quantity <= 0;
 }
 
+export function hasShopLink(product: Product): boolean {
+  return product.shopLinks.length > 0;
+}
+
 // What the stock list is narrowed to: a category, the products below their
-// minimum ('low') or the products out of stock ('out').
-export type StockFilter = CategoryFilter | 'low' | 'out';
+// minimum ('low'), the products out of stock ('out') or the products without
+// an online order link yet ('nolink').
+export type StockFilter = CategoryFilter | 'low' | 'out' | 'nolink';
 
 export function matchesStockFilter(product: Product, filter: StockFilter): boolean {
   if (filter === 'low') {
@@ -131,6 +136,9 @@ export function matchesStockFilter(product: Product, filter: StockFilter): boole
   }
   if (filter === 'out') {
     return isOutOfStock(product);
+  }
+  if (filter === 'nolink') {
+    return !hasShopLink(product);
   }
   return matchesCategory(product, filter);
 }
