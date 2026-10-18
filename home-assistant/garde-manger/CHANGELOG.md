@@ -1,6 +1,6 @@
 # Journal des versions
 
-## 1.8.0
+## 1.7.0
 
 - Chaque produit peut avoir des liens de commande en ligne, par exemple ses fiches sur La Fourche : un par référence achetée (marque, format), avec un nom. Dans la liste de courses, un bouton par lien ouvre la fiche pour l'ajouter au panier.
 
