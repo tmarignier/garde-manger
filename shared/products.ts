@@ -1,12 +1,15 @@
 // Product and stock rules shared by the server (validation) and the client
 // (forms, list). They depend on neither HTTP nor SQLite.
 
-import type { Category, Product } from './types.ts';
+import type { Category, Product, ShopLink } from './types.ts';
 
 export const PRODUCT_NAME_MAX_LENGTH = 100;
 export const CATEGORY_NAME_MAX_LENGTH = 50;
 export const UNIT_MAX_LENGTH = 30;
 export const QUANTITY_MAX = 1_000_000;
+export const SHOP_URL_MAX_LENGTH = 2000;
+export const SHOP_LINK_LABEL_MAX_LENGTH = 50;
+export const SHOP_LINKS_MAX = 10;
 
 // Quantities keep three decimals (grams for a kilo), which also removes
 // floating point noise such as 0.1 + 0.2 = 0.30000000000000004.
@@ -41,6 +44,35 @@ export function normalizeText(value: string, maxLength: number, allowEmpty = fal
     return null;
   }
   return text;
+}
+
+// Reads the link to a product's page on an online shop. A link typed without
+// 'https://' gets it. Only web links are accepted: a javascript: link would
+// run code when tapped. Returns the link, or null when it is not a web link.
+export function parseShopUrl(text: string): string | null {
+  const trimmed = text.trim();
+  if (trimmed.length > SHOP_URL_MAX_LENGTH) {
+    return null;
+  }
+  const withScheme = /^[a-z][a-z\d+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(withScheme);
+    const isWeb = url.protocol === 'https:' || url.protocol === 'http:';
+    return isWeb && url.hostname.includes('.') ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+// The shop's name shown on the link's button: 'lafourche.fr' for
+// 'https://www.lafourche.fr/products/pates'.
+export function shopName(shopUrl: string): string {
+  return new URL(shopUrl).hostname.replace(/^www\./, '');
+}
+
+// The text of a link's button in the shopping list.
+export function shopLinkText(link: ShopLink): string {
+  return link.label === '' ? `Ouvrir sur ${shopName(link.url)}` : `${link.label} · ${shopName(link.url)}`;
 }
 
 // Reads a quantity typed in a form, where French users write a decimal comma
@@ -89,10 +121,15 @@ export function isOutOfStock(product: Product): boolean {
   return product.quantity <= 0;
 }
 
+export function hasShopLink(product: Product): boolean {
+  return product.shopLinks.length > 0;
+}
+
 // What the stock list is narrowed to: a category, the products below their
-// minimum ('low'), the products out of stock ('out') or the products the
-// family uses most ('frequent', whose ids are given).
-export type StockFilter = CategoryFilter | 'low' | 'out' | 'frequent';
+// minimum ('low'), the products out of stock ('out'), the products the family
+// uses most ('frequent', whose ids are given) or the products without an online
+// order link yet ('nolink').
+export type StockFilter = CategoryFilter | 'low' | 'out' | 'frequent' | 'nolink';
 
 export function matchesStockFilter(
   product: Product,
@@ -107,6 +144,9 @@ export function matchesStockFilter(
   }
   if (filter === 'frequent') {
     return frequentIds.has(product.id);
+  }
+  if (filter === 'nolink') {
+    return !hasShopLink(product);
   }
   return matchesCategory(product, filter);
 }

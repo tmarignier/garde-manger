@@ -16,8 +16,9 @@
 - Modifier ou supprimer un produit, y compris changer sa catégorie.
 - Renommer une catégorie : le nouveau nom s'applique à tous ses produits.
 - Consulter la liste des produits, regroupés par catégorie, une ligne par produit. La recherche par nom et les filtres restent en haut de l'écran pendant qu'on fait défiler la liste ; ils sont conservés quand on passe par la liste de courses.
-- Filtrer d'un toucher : les produits fréquents, ceux à racheter (sous leur seuil), ceux en rupture (quantité 0), ou une catégorie.
+- Filtrer d'un toucher : les produits fréquents, ceux à racheter (sous leur seuil), ceux en rupture (quantité 0), ceux sans lien de commande en ligne, ou une catégorie.
 - La pastille « Fréquents » montre, sans recherche, les produits que la famille ajuste le plus avec `+` et `−` : au moins deux fois dans les 30 derniers jours, 15 au plus. Elle se remplit à l'usage et n'apparaît qu'une fois qu'il y en a.
+- La pastille « Sans lien » apparaît dès qu'au moins un produit a un lien de commande : elle liste ceux qui n'en ont pas encore. Toucher un de ces produits ouvre son formulaire sur un lien vide, prêt à coller l'adresse ; une fois enregistré, il sort de la liste.
 - La recherche trouve tous les mots tapés, dans n'importe quel ordre (« basmati riz » trouve « Riz basmati »), dans le nom du produit ou de sa catégorie (« surgelés » montre toute la catégorie). Sur ordinateur, `/` place le curseur dans la recherche et Échap l'efface.
 - Chaque catégorie affiche son nombre de produits ; toucher son titre la replie. Les catégories repliées sont mémorisées sur chaque appareil, et toujours dépliées pendant une recherche ou un filtre.
 - Le nombre de produits affichés est indiqué en tête de liste, et les produits en rupture (quantité 0) sont signalés à part de ceux à racheter.
@@ -38,6 +39,7 @@
 - Les coches sont gardées et partagées par toute la famille jusqu'à la validation : on peut cocher en passant la commande d'un drive, puis valider à la livraison, depuis n'importe quel téléphone.
 - La liste est regroupée par catégorie, comme le stock, et se manipule d'une main sur le téléphone. Un filtre par catégorie, en pastilles, n'affiche que les produits d'un rayon ; les articles ponctuels restent affichés et les produits cochés hors du filtre sont validés avec les autres.
 - On peut ajouter à la main un article ponctuel à la liste (hors stock suivi).
+- Chaque produit peut avoir des **liens de commande en ligne** : l'adresse de sa fiche sur le site où l'on commande (La Fourche, un drive…), une par référence achetée (marque, format), avec un nom pour les distinguer (« Barilla 500 g »). Dans la liste de courses, un bouton par lien (« Barilla 500 g · lafourche.fr ↗ ») ouvre la fiche dans un nouvel onglet pour l'ajouter au panier ; on revient ensuite cocher le produit. L'application ne remplit pas le panier elle-même et ne passe jamais commande.
 
 ## Plus tard (idées, non prioritaires)
 

@@ -13,6 +13,7 @@ import type {
   PurchasesRequest,
   ResetPasswordRequest,
   SessionResponse,
+  ShopLink,
   ShoppingListResponse,
   UpdateProductRequest,
   User,
@@ -163,6 +164,10 @@ function isCategory(value: unknown): value is Category {
   );
 }
 
+function isShopLink(value: unknown): value is ShopLink {
+  return isRecord(value) && typeof value['label'] === 'string' && typeof value['url'] === 'string';
+}
+
 function isProduct(value: unknown): value is Product {
   return (
     isRecord(value) &&
@@ -173,6 +178,8 @@ function isProduct(value: unknown): value is Product {
     typeof value['quantity'] === 'number' &&
     typeof value['minQuantity'] === 'number' &&
     isNumberOrNull(value['targetQuantity']) &&
+    Array.isArray(value['shopLinks']) &&
+    value['shopLinks'].every(isShopLink) &&
     (value['updatedByName'] === null || typeof value['updatedByName'] === 'string') &&
     typeof value['updatedAt'] === 'string'
   );

@@ -128,6 +128,7 @@ describe('products API', () => {
         quantity: 1.5,
         minQuantity: 1,
         targetQuantity: 4,
+        shopLinks: [],
         updatedByName: 'Léa',
         updatedAt: '',
       },
@@ -151,6 +152,12 @@ describe('products API', () => {
       { ...valid, minQuantity: 3, targetQuantity: 2 },
       { ...valid, targetQuantity: -2 },
       { ...valid, unit: 3 },
+      { ...valid, shopLinks: 'https://lafourche.fr/pates' },
+      { ...valid, shopLinks: [{ url: 'pates' }] },
+      { ...valid, shopLinks: [{ url: 'javascript:alert(1)' }] },
+      { ...valid, shopLinks: [{ url: 42 }] },
+      { ...valid, shopLinks: [{ url: 'https://lafourche.fr/pates', label: 'x'.repeat(51) }] },
+      { ...valid, shopLinks: Array.from({ length: 11 }, () => ({ url: 'https://lafourche.fr/pates' })) },
     ];
     for (const body of invalid) {
       assert.equal((await admin.request('POST', '/api/products', body)).status, 400, JSON.stringify(body));
@@ -192,6 +199,45 @@ describe('products API', () => {
     const updated = (response.body as { product: Product }).product;
     assert.equal(updated.name, 'Spaghetti');
     assert.equal(updated.quantity, 1);
+  });
+
+  it('saves, keeps and removes the links to the product on online shops', async () => {
+    const created = await createProduct(admin, {
+      shopLinks: [
+        { label: ' Barilla 500 g ', url: ' https://www.lafourche.fr/products/barilla ' },
+        { label: '', url: 'lafourche.fr/products/pates-bio' },
+      ],
+    });
+    const links = [
+      { label: 'Barilla 500 g', url: 'https://www.lafourche.fr/products/barilla' },
+      { label: '', url: 'https://lafourche.fr/products/pates-bio' },
+    ];
+    assert.deepEqual(created.shopLinks, links);
+    const { shopLinks: _shopLinks, ...fields } = created;
+
+    // An edit without the links keeps them.
+    const kept = await member.request('PUT', `/api/products/${created.id}`, { ...fields, name: 'Spaghetti' });
+    assert.deepEqual((kept.body as { product: Product }).product.shopLinks, links);
+
+    const reordered = await member.request('PUT', `/api/products/${created.id}`, {
+      ...fields,
+      shopLinks: [links[1], { url: 'https://lafourche.fr/products/rummo' }],
+    });
+    assert.deepEqual((reordered.body as { product: Product }).product.shopLinks, [
+      links[1],
+      { label: '', url: 'https://lafourche.fr/products/rummo' },
+    ]);
+    const list = await admin.request('GET', '/api/products');
+    assert.deepEqual((list.body as { products: Product[] }).products[0]?.shopLinks.length, 2);
+
+    const removed = await member.request('PUT', `/api/products/${created.id}`, { ...fields, shopLinks: [] });
+    assert.deepEqual((removed.body as { product: Product }).product.shopLinks, []);
+  });
+
+  it('deletes the links of a deleted product', async () => {
+    const created = await createProduct(admin, { shopLinks: [{ label: '', url: 'https://lafourche.fr/p' }] });
+    assert.equal((await admin.request('DELETE', `/api/products/${created.id}`)).status, 204);
+    assert.equal(db.prepare('SELECT count(*) AS count FROM shop_links').get()?.['count'], 0);
   });
 
   it('deletes a product', async () => {

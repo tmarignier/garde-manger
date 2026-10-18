@@ -22,6 +22,7 @@ describe('openDatabase', () => {
       'product_events',
       'products',
       'sessions',
+      'shop_links',
       'shopping_checks',
       'users',
     ]);

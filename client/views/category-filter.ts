@@ -1,4 +1,4 @@
-import { compareNames, isBelowMinimum, isOutOfStock, type StockFilter } from '../../shared/products.ts';
+import { compareNames, hasShopLink, isBelowMinimum, isOutOfStock, type StockFilter } from '../../shared/products.ts';
 import type { Category, Product } from '../../shared/types.ts';
 import { h } from '../dom.ts';
 
@@ -6,6 +6,7 @@ const ALL = 'all';
 const LOW = 'low';
 const OUT = 'out';
 const FREQUENT = 'frequent';
+const NO_LINK = 'nolink';
 const NONE = 'none';
 
 type Chip = { key: string; label: string; count?: number };
@@ -13,8 +14,9 @@ type Chip = { key: string; label: string; count?: number };
 // A row of chips to narrow a product list: every product, the categories that
 // have products in the list, and « Sans catégorie » when some have none. With
 // statuses, it also offers the products the family uses most, those to buy
-// again and those out of stock, with their count. One tap picks a chip; the row is hidden while there is
-// nothing to choose between.
+// again, those out of stock and those without an online order link, with
+// their count. One tap picks a chip; the row is hidden while there is nothing
+// to choose between.
 export function categoryFilter(
   onChange: () => void,
   options: { statuses?: boolean } = {},
@@ -30,7 +32,7 @@ export function categoryFilter(
   let selected = ALL;
 
   function value(): StockFilter {
-    if (selected === LOW || selected === OUT || selected === FREQUENT) {
+    if (selected === LOW || selected === OUT || selected === FREQUENT || selected === NO_LINK) {
       return selected;
     }
     if (selected === NONE) {
@@ -80,6 +82,13 @@ export function categoryFilter(
       }
       if (out > 0 || selected === OUT) {
         chips.push({ key: OUT, label: 'En rupture', count: out });
+      }
+      // Only offered once some product has a link: a family that does not
+      // order online never sees it.
+      const withLink = products.filter(hasShopLink).length;
+      const noLink = products.length - withLink;
+      if ((withLink > 0 && noLink > 0) || selected === NO_LINK) {
+        chips.push({ key: NO_LINK, label: 'Sans lien', count: noLink });
       }
     }
     chips.push(

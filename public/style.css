@@ -425,6 +425,42 @@ button.step {
   margin-top: 0;
 }
 
+.shop-links-field {
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+}
+
+.shop-links-field legend {
+  margin-bottom: 0.25rem;
+  padding: 0;
+  font-weight: 500;
+}
+
+.shop-links-field .hint {
+  margin: 0 0 0.5rem;
+}
+
+/* One reference: its name, its address and a button to remove it. */
+.shop-link-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.shop-link-row input[name='shop-link-url'] {
+  grid-column: 1;
+}
+
+.shop-link-row .remove {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
 /* History of a product, under it in the stock. */
 .product-history {
   margin-bottom: 1rem;
@@ -541,6 +577,20 @@ button.step {
 .shopping-items li[data-checked] .item-quantity {
   color: var(--muted);
   text-decoration: line-through;
+}
+
+/* Links to the product's pages on online shops, under it in the shopping list. */
+.shop-links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0 0 0.75rem 2.25rem;
+}
+
+.shop-link {
+  color: var(--accent);
+  font-size: 0.95rem;
 }
 
 .bought {

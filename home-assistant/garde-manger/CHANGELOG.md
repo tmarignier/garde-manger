@@ -1,8 +1,13 @@
 # Journal des versions
 
+## 1.9.0
+
+- Nouvelle pastille « Sans lien » dans le stock : les produits qui n'ont pas encore de lien de commande en ligne. Toucher un produit ouvre son formulaire sur un lien vide, prêt à coller l'adresse.
+- Nouvelle pastille « Fréquents » dans le stock : les produits que la famille ajuste le plus souvent avec `+` et `−`, sans passer par la recherche. Elle apparaît dès qu'un produit a été ajusté au moins deux fois dans les 30 derniers jours.
+
 ## 1.7.0
 
-- Nouvelle pastille « Fréquents » dans le stock : les produits que la famille ajuste le plus souvent avec `+` et `−`, sans passer par la recherche. Elle apparaît dès qu'un produit a été ajusté au moins deux fois dans les 30 derniers jours.
+- Chaque produit peut avoir des liens de commande en ligne, par exemple ses fiches sur La Fourche : un par référence achetée (marque, format), avec un nom. Dans la liste de courses, un bouton par lien ouvre la fiche pour l'ajouter au panier.
 
 ## 1.6.0
 
