@@ -13,8 +13,8 @@ type Chip = { key: string; label: string; count?: number };
 // A row of chips to narrow a product list: every product, the categories that
 // have products in the list, and « Sans catégorie » when some have none. With
 // statuses, it also offers the products to buy again, those out of stock and
-// those without an online order link, with their count. One tap picks a chip; the row is hidden while there is
-// nothing to choose between.
+// those without an online order link, with their count. One tap picks a chip;
+// the row is hidden while there is nothing to choose between.
 export function categoryFilter(
   onChange: () => void,
   options: { statuses?: boolean } = {},
@@ -73,8 +73,8 @@ export function categoryFilter(
       if (out > 0 || selected === OUT) {
         chips.push({ key: OUT, label: 'En rupture', count: out });
       }
-      // Only offered once links are in use, so a family that orders in a shop
-      // can spot the products still missing one.
+      // Only offered once some product has a link: a family that does not
+      // order online never sees it.
       const withLink = products.filter(hasShopLink).length;
       const noLink = products.length - withLink;
       if ((withLink > 0 && noLink > 0) || selected === NO_LINK) {
