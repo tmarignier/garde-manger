@@ -14,6 +14,7 @@ import {
   normalizeText,
   parseQuantity,
   parseShopUrl,
+  shopLinkText,
   shopName,
 } from '../shared/products.ts';
 import type { Category, Product } from '../shared/types.ts';
@@ -27,7 +28,7 @@ function product(id: number, name: string, categoryId: number | null, quantity =
     quantity,
     minQuantity,
     targetQuantity: null,
-    shopUrl: null,
+    shopLinks: [],
     updatedByName: 'Léa',
     updatedAt: '2026-10-09T20:00:00.000Z',
   };
@@ -216,5 +217,10 @@ describe('shopName', () => {
   it('names the shop by its domain', () => {
     assert.equal(shopName('https://www.lafourche.fr/products/pates'), 'lafourche.fr');
     assert.equal(shopName('https://drive.example/p'), 'drive.example');
+  });
+
+  it('names a link by its label and shop', () => {
+    assert.equal(shopLinkText({ label: '', url: 'https://www.lafourche.fr/p' }), 'Ouvrir sur lafourche.fr');
+    assert.equal(shopLinkText({ label: 'Barilla 500 g', url: 'https://lafourche.fr/p' }), 'Barilla 500 g · lafourche.fr');
   });
 });

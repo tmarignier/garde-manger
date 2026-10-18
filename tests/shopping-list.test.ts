@@ -12,7 +12,7 @@ function product(name: string, quantity: number, minQuantity: number, targetQuan
     quantity,
     minQuantity,
     targetQuantity,
-    shopUrl: null,
+    shopLinks: [],
     updatedByName: 'Léa',
     updatedAt: '2026-10-09T20:00:00.000Z',
   };

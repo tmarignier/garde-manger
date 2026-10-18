@@ -2,6 +2,8 @@ import type { DatabaseSync } from 'node:sqlite';
 import {
   CATEGORY_NAME_MAX_LENGTH,
   PRODUCT_NAME_MAX_LENGTH,
+  SHOP_LINKS_MAX,
+  SHOP_LINK_LABEL_MAX_LENGTH,
   UNIT_MAX_LENGTH,
   applyAdjustment,
   isValidDelta,
@@ -18,6 +20,7 @@ import type {
   ProductRequest,
   ProductResponse,
   ProductsResponse,
+  ShopLink,
   UpdateProductRequest,
 } from '../shared/types.ts';
 import { transaction } from './database.ts';
@@ -55,23 +58,24 @@ function readQuantity(body: Record<string, unknown>, key: string): number {
   return roundQuantity(value);
 }
 
-// A missing link is left undefined; null or an empty text removes the link.
-function readShopUrl(body: Record<string, unknown>): string | null | undefined {
-  const value = body['shopUrl'];
-  if (value === undefined || value === null) {
-    return value;
+// Missing links are left undefined, so that an edit keeps them.
+function readShopLinks(body: Record<string, unknown>): ShopLink[] | undefined {
+  const value = body['shopLinks'];
+  if (value === undefined) {
+    return undefined;
   }
-  if (typeof value !== 'string') {
-    throw new HttpError(400, 'Missing or invalid field: shopUrl');
+  if (!Array.isArray(value) || value.length > SHOP_LINKS_MAX) {
+    throw new HttpError(400, 'Missing or invalid field: shopLinks');
   }
-  if (value.trim() === '') {
-    return null;
-  }
-  const shopUrl = parseShopUrl(value);
-  if (shopUrl === null) {
-    throw new HttpError(400, 'Missing or invalid field: shopUrl');
-  }
-  return shopUrl;
+  return value.map((item: unknown) => {
+    const link = readObject(item);
+    const url = parseShopUrl(readString(link, 'url'));
+    const label = link['label'] === undefined ? '' : normalizeText(readString(link, 'label'), SHOP_LINK_LABEL_MAX_LENGTH, true);
+    if (url === null || label === null) {
+      throw new HttpError(400, 'Missing or invalid field: shopLinks');
+    }
+    return { label, url };
+  });
 }
 
 // Reads a product sent to be added or edited. The quantity is required to add
@@ -97,9 +101,9 @@ function readProductRequest(db: DatabaseSync, rawBody: unknown): UpdateProductRe
   if (body['quantity'] !== undefined) {
     product.quantity = readQuantity(body, 'quantity');
   }
-  const shopUrl = readShopUrl(body);
-  if (shopUrl !== undefined) {
-    product.shopUrl = shopUrl;
+  const shopLinks = readShopLinks(body);
+  if (shopLinks !== undefined) {
+    product.shopLinks = shopLinks;
   }
   return product;
 }

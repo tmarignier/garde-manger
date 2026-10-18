@@ -75,6 +75,13 @@ export type CategoryRequest = {
   name: string;
 };
 
+// A product's page on an online shop. The label tells references apart
+// ('Barilla 500 g'); it may be empty when the product has a single one.
+export type ShopLink = {
+  label: string;
+  url: string;
+};
+
 export type Product = {
   id: number;
   name: string;
@@ -83,9 +90,9 @@ export type Product = {
   quantity: number;
   minQuantity: number;
   targetQuantity: number | null;
-  // The product's page on an online shop (La Fourche, a drive…), opened from
-  // the shopping list to add it to the cart. Null when none was saved.
-  shopUrl: string | null;
+  // The product's pages on an online shop (La Fourche, a drive…), opened from
+  // the shopping list to add it to the cart: one per brand or size bought.
+  shopLinks: ShopLink[];
   // The name of the last person who changed the product, null when their
   // account was deleted.
   updatedByName: string | null;
@@ -108,8 +115,8 @@ export type ProductRequest = {
   quantity: number;
   minQuantity: number;
   targetQuantity: number | null;
-  // Left out, a new product has no link and an edited one keeps its link.
-  shopUrl?: string | null;
+  // Left out, a new product has no link and an edited one keeps its links.
+  shopLinks?: ShopLink[];
 };
 
 // PUT /api/products/:id. Without quantity, the stock is left as it is, so that

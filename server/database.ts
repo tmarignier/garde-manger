@@ -99,9 +99,18 @@ export const migrations: readonly string[] = [
 
   ALTER TABLE extra_items ADD COLUMN checked INTEGER NOT NULL DEFAULT 0 CHECK (checked IN (0, 1));
   `,
-  // The product's page on an online shop, to fill the cart from the shopping list.
+  // The product's pages on online shops, to fill the cart from the shopping
+  // list: one per reference (brand, size) of the product.
   `
-  ALTER TABLE products ADD COLUMN shop_url TEXT;
+  CREATE TABLE shop_links (
+    id INTEGER PRIMARY KEY,
+    product_id INTEGER NOT NULL REFERENCES products (id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    label TEXT NOT NULL DEFAULT '',
+    url TEXT NOT NULL
+  ) STRICT;
+
+  CREATE INDEX shop_links_product_id ON shop_links (product_id, position);
   `,
 ];
 

@@ -1,13 +1,15 @@
 // Product and stock rules shared by the server (validation) and the client
 // (forms, list). They depend on neither HTTP nor SQLite.
 
-import type { Category, Product } from './types.ts';
+import type { Category, Product, ShopLink } from './types.ts';
 
 export const PRODUCT_NAME_MAX_LENGTH = 100;
 export const CATEGORY_NAME_MAX_LENGTH = 50;
 export const UNIT_MAX_LENGTH = 30;
 export const QUANTITY_MAX = 1_000_000;
 export const SHOP_URL_MAX_LENGTH = 2000;
+export const SHOP_LINK_LABEL_MAX_LENGTH = 50;
+export const SHOP_LINKS_MAX = 10;
 
 // Quantities keep three decimals (grams for a kilo), which also removes
 // floating point noise such as 0.1 + 0.2 = 0.30000000000000004.
@@ -66,6 +68,11 @@ export function parseShopUrl(text: string): string | null {
 // 'https://www.lafourche.fr/products/pates'.
 export function shopName(shopUrl: string): string {
   return new URL(shopUrl).hostname.replace(/^www\./, '');
+}
+
+// The text of a link's button in the shopping list.
+export function shopLinkText(link: ShopLink): string {
+  return link.label === '' ? `Ouvrir sur ${shopName(link.url)}` : `${link.label} · ${shopName(link.url)}`;
 }
 
 // Reads a quantity typed in a form, where French users write a decimal comma
