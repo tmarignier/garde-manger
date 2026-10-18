@@ -18,6 +18,7 @@ import {
   SHOP_URL_MAX_LENGTH,
   UNIT_MAX_LENGTH,
   groupProducts,
+  hasShopLink,
   isBelowMinimum,
   isOutOfStock,
   isValidTarget,
@@ -241,7 +242,9 @@ export function stockView(): HTMLElement {
           ? 'Rien à racheter : tout est au-dessus de son seuil minimum.'
           : current === 'out'
             ? 'Aucun produit en rupture.'
-            : 'Aucun produit dans cette catégorie.';
+            : current === 'nolink'
+              ? 'Tous les produits ont un lien de commande.'
+              : 'Aucun produit dans cette catégorie.';
       return [h('p', { class: 'message' }, text)];
     }
     if (current !== 'all' && products.some((product) => matchesSearch(product, query, categoryNameOf(product)))) {
@@ -342,11 +345,19 @@ export function stockView(): HTMLElement {
         return;
       }
       editSlot.dataset['content'] = content;
+      // Under « Sans lien », the form opens on an empty link, ready to paste.
+      const addLink = content === 'form' && filter.value() === 'nolink' && !hasShopLink(product);
       editSlot.append(
         content === 'form'
-          ? productForm(product, () => toggle('form'), { meta: productMeta(product, () => toggle('history')) })
+          ? productForm(product, () => toggle('form'), {
+              meta: productMeta(product, () => toggle('history')),
+              addLink,
+            })
           : productHistory(product),
       );
+      if (addLink) {
+        editSlot.querySelector<HTMLInputElement>('input[name="shop-link-url"]')?.focus();
+      }
     }
     const item = h(
       'li',
@@ -403,7 +414,7 @@ export function stockView(): HTMLElement {
   function productForm(
     product: Product | null,
     close: () => void,
-    options: { meta?: Node; name?: string } = {},
+    options: { meta?: Node; name?: string; addLink?: boolean } = {},
   ): HTMLFormElement {
     const name = h('input', {
       type: 'text',
@@ -448,7 +459,7 @@ export function stockView(): HTMLElement {
     const quantity = quantityInput('quantity', product?.quantity ?? 0, true);
     const minQuantity = quantityInput('min-quantity', product?.minQuantity ?? 1, true);
     const targetQuantity = quantityInput('target-quantity', product?.targetQuantity ?? null, false);
-    const shopLinks = shopLinksEditor(product?.shopLinks ?? []);
+    const shopLinks = shopLinksEditor(product?.shopLinks ?? [], options.addLink === true);
     const formMessage = messageLine();
     const cancel = h('button', { type: 'button', class: 'secondary' }, 'Annuler');
     const remove = product === null ? null : h('button', { type: 'button', class: 'danger' }, 'Supprimer');
@@ -552,7 +563,7 @@ export function stockView(): HTMLElement {
 
   // The links of the product form: one row per reference of the product on an
   // online shop, with a name to tell them apart.
-  function shopLinksEditor(initial: readonly ShopLink[]): {
+  function shopLinksEditor(initial: readonly ShopLink[], addEmpty: boolean): {
     element: HTMLFieldSetElement;
     read: () => ShopLink[] | null;
   } {
@@ -598,6 +609,9 @@ export function stockView(): HTMLElement {
 
     for (const link of initial) {
       addRow(link);
+    }
+    if (addEmpty) {
+      addRow(null);
     }
     add.addEventListener('click', () => {
       addRow(null);

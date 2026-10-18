@@ -168,6 +168,13 @@ describe('matchesStockFilter', () => {
     assert.equal(matchesStockFilter(sel, 1), false);
     assert.equal(matchesStockFilter(sel, 'all'), true);
   });
+
+  it('keeps the products without an online order link', () => {
+    const riz = product(1, 'Riz', 1, 1, 2);
+    const sel = { ...product(2, 'Sel', 2, 0, 0), shopLinks: [{ label: '', url: 'https://lafourche.fr/sel' }] };
+    assert.equal(matchesStockFilter(riz, 'nolink'), true);
+    assert.equal(matchesStockFilter(sel, 'nolink'), false);
+  });
 });
 
 describe('groupProducts', () => {
