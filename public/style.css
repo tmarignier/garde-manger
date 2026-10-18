@@ -543,6 +543,13 @@ button.step {
   text-decoration: line-through;
 }
 
+.shop-link {
+  display: inline-block;
+  padding: 0 0 0.75rem 2.25rem;
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
 .bought {
   display: flex;
   gap: 0.75rem;

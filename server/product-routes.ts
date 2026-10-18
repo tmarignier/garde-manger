@@ -8,6 +8,7 @@ import {
   isValidQuantity,
   isValidTarget,
   normalizeText,
+  parseShopUrl,
   roundQuantity,
 } from '../shared/products.ts';
 import type {
@@ -54,6 +55,25 @@ function readQuantity(body: Record<string, unknown>, key: string): number {
   return roundQuantity(value);
 }
 
+// A missing link is left undefined; null or an empty text removes the link.
+function readShopUrl(body: Record<string, unknown>): string | null | undefined {
+  const value = body['shopUrl'];
+  if (value === undefined || value === null) {
+    return value;
+  }
+  if (typeof value !== 'string') {
+    throw new HttpError(400, 'Missing or invalid field: shopUrl');
+  }
+  if (value.trim() === '') {
+    return null;
+  }
+  const shopUrl = parseShopUrl(value);
+  if (shopUrl === null) {
+    throw new HttpError(400, 'Missing or invalid field: shopUrl');
+  }
+  return shopUrl;
+}
+
 // Reads a product sent to be added or edited. The quantity is required to add
 // a product and optional to edit one.
 function readProductRequest(db: DatabaseSync, rawBody: unknown): UpdateProductRequest {
@@ -76,6 +96,10 @@ function readProductRequest(db: DatabaseSync, rawBody: unknown): UpdateProductRe
   };
   if (body['quantity'] !== undefined) {
     product.quantity = readQuantity(body, 'quantity');
+  }
+  const shopUrl = readShopUrl(body);
+  if (shopUrl !== undefined) {
+    product.shopUrl = shopUrl;
   }
   return product;
 }

@@ -13,6 +13,7 @@ import { nameKey } from '../../shared/accounts.ts';
 import {
   CATEGORY_NAME_MAX_LENGTH,
   PRODUCT_NAME_MAX_LENGTH,
+  SHOP_URL_MAX_LENGTH,
   UNIT_MAX_LENGTH,
   groupProducts,
   isBelowMinimum,
@@ -21,6 +22,7 @@ import {
   matchesSearch,
   matchesStockFilter,
   parseQuantity,
+  parseShopUrl,
   type StockFilter,
 } from '../../shared/products.ts';
 import type { Category, Product, ProductRequest } from '../../shared/types.ts';
@@ -444,6 +446,17 @@ export function stockView(): HTMLElement {
     const quantity = quantityInput('quantity', product?.quantity ?? 0, true);
     const minQuantity = quantityInput('min-quantity', product?.minQuantity ?? 1, true);
     const targetQuantity = quantityInput('target-quantity', product?.targetQuantity ?? null, false);
+    const shopUrl = h('input', {
+      type: 'text',
+      inputmode: 'url',
+      autocapitalize: 'none',
+      spellcheck: 'false',
+      name: 'shop-url',
+      maxlength: String(SHOP_URL_MAX_LENGTH),
+      autocomplete: 'off',
+      placeholder: 'https://…',
+      value: product?.shopUrl ?? '',
+    });
     const formMessage = messageLine();
     const cancel = h('button', { type: 'button', class: 'secondary' }, 'Annuler');
     const remove = product === null ? null : h('button', { type: 'button', class: 'danger' }, 'Supprimer');
@@ -463,6 +476,13 @@ export function stockView(): HTMLElement {
       h('p', { class: 'hint' }, 'Sous le seuil minimum, le produit passe dans la liste de courses.'),
       field('Quantité cible (facultatif)', targetQuantity),
       h('p', { class: 'hint' }, 'La quantité à avoir après les courses. Sans cible, on remonte jusqu’au seuil.'),
+      field('Lien de commande en ligne (facultatif)', shopUrl),
+      h(
+        'p',
+        { class: 'hint' },
+        'L’adresse de la fiche du produit sur le site où vous commandez (La Fourche, un drive…). ',
+        'Dans la liste de courses, un bouton l’ouvre pour l’ajouter au panier.',
+      ),
       h('div', { class: 'actions' }, h('button', { type: 'submit' }, 'Enregistrer'), cancel, remove),
       formMessage.element,
     );
@@ -502,6 +522,11 @@ export function stockView(): HTMLElement {
         formMessage.show('La quantité cible ne peut pas être inférieure au seuil minimum.');
         return;
       }
+      const shopUrlValue = shopUrl.value.trim() === '' ? null : parseShopUrl(shopUrl.value);
+      if (shopUrl.value.trim() !== '' && shopUrlValue === null) {
+        formMessage.show('Le lien de commande doit être une adresse web, par exemple https://lafourche.fr/…');
+        return;
+      }
       // An untouched quantity is not sent, so that a + or − made meanwhile on
       // another device is kept.
       const quantityChanged = product === null || quantity.value !== quantity.defaultValue;
@@ -514,6 +539,7 @@ export function stockView(): HTMLElement {
             quantity: quantityValue,
             minQuantity: minQuantityValue,
             targetQuantity: targetValue,
+            shopUrl: shopUrlValue,
           };
           if (product === null) {
             const saved = await createProduct(request);

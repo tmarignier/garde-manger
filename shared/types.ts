@@ -83,6 +83,9 @@ export type Product = {
   quantity: number;
   minQuantity: number;
   targetQuantity: number | null;
+  // The product's page on an online shop (La Fourche, a drive…), opened from
+  // the shopping list to add it to the cart. Null when none was saved.
+  shopUrl: string | null;
   // The name of the last person who changed the product, null when their
   // account was deleted.
   updatedByName: string | null;
@@ -105,6 +108,8 @@ export type ProductRequest = {
   quantity: number;
   minQuantity: number;
   targetQuantity: number | null;
+  // Left out, a new product has no link and an edited one keeps its link.
+  shopUrl?: string | null;
 };
 
 // PUT /api/products/:id. Without quantity, the stock is left as it is, so that

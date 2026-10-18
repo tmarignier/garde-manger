@@ -173,6 +173,7 @@ function isProduct(value: unknown): value is Product {
     typeof value['quantity'] === 'number' &&
     typeof value['minQuantity'] === 'number' &&
     isNumberOrNull(value['targetQuantity']) &&
+    (value['shopUrl'] === null || typeof value['shopUrl'] === 'string') &&
     (value['updatedByName'] === null || typeof value['updatedByName'] === 'string') &&
     typeof value['updatedAt'] === 'string'
   );

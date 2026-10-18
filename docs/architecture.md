@@ -120,6 +120,7 @@ categories                catégories de produits
 products                  produits suivis en stock
   id, name, category_id, unit,
   quantity, min_quantity (seuil minimum), target_quantity (optionnelle),
+  shop_url (lien de commande en ligne, optionnel),
   updated_by (user_id), updated_at
 
 extra_items               articles ponctuels ajoutés à la main à la liste de courses
@@ -136,6 +137,8 @@ product_events            historique des modifications des produits
 ```
 
 La liste de courses n'est **pas stockée** : elle est calculée à partir des produits dont `quantity < min_quantity` et des produits cochés, à laquelle s'ajoutent les articles ponctuels. Quantité à acheter = `target_quantity − quantity` si une cible existe, sinon `min_quantity − quantity`. Le calcul est dans `server/shopping-list.ts`, sans HTTP ni SQLite.
+
+**Commande en ligne.** Le lien de commande d'un produit (`shop_url`) ouvre sa fiche sur le site marchand ; l'ajout au panier reste fait par la personne. L'application n'automatise pas le site marchand : La Fourche, par exemple, n'a pas d'API publique, et remplir le panier à sa place demanderait de stocker le mot de passe du compte, d'imiter le site (ce que les conditions d'utilisation des sites marchands interdisent en général) et casserait à chaque changement du site. Seuls les liens `http` et `https` sont acceptés (`parseShopUrl` dans `shared/products.ts`) : un lien `javascript:` exécuterait du code en le touchant.
 
 ### Courses
 

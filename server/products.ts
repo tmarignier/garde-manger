@@ -58,7 +58,7 @@ export function renameCategory(db: DatabaseSync, id: number, name: string): Cate
 
 const PRODUCT_SELECT = `
   SELECT products.id, products.name, products.category_id, products.unit, products.quantity,
-    products.min_quantity, products.target_quantity, users.name AS updated_by_name, products.updated_at
+    products.min_quantity, products.target_quantity, products.shop_url, users.name AS updated_by_name, products.updated_at
   FROM products LEFT JOIN users ON users.id = products.updated_by`;
 
 function rowToProduct(row: unknown): Product {
@@ -71,6 +71,7 @@ function rowToProduct(row: unknown): Product {
     typeof row['quantity'] !== 'number' ||
     typeof row['min_quantity'] !== 'number' ||
     (row['target_quantity'] !== null && typeof row['target_quantity'] !== 'number') ||
+    (row['shop_url'] !== null && typeof row['shop_url'] !== 'string') ||
     (row['updated_by_name'] !== null && typeof row['updated_by_name'] !== 'string') ||
     typeof row['updated_at'] !== 'string'
   ) {
@@ -84,6 +85,7 @@ function rowToProduct(row: unknown): Product {
     quantity: row['quantity'],
     minQuantity: row['min_quantity'],
     targetQuantity: row['target_quantity'],
+    shopUrl: row['shop_url'],
     updatedByName: row['updated_by_name'],
     updatedAt: row['updated_at'],
   };
@@ -104,10 +106,10 @@ export function insertProduct(db: DatabaseSync, product: ProductRequest, userId:
   const result = db
     .prepare(
       `INSERT INTO products
-         (id, name, category_id, unit, quantity, min_quantity, target_quantity, updated_by, updated_at)
+         (id, name, category_id, unit, quantity, min_quantity, target_quantity, shop_url, updated_by, updated_at)
        VALUES (
          (SELECT max(coalesce((SELECT max(id) FROM products), 0), coalesce((SELECT max(product_id) FROM product_events), 0)) + 1),
-         ?, ?, ?, ?, ?, ?, ?, ?)`,
+         ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       product.name,
@@ -116,6 +118,7 @@ export function insertProduct(db: DatabaseSync, product: ProductRequest, userId:
       product.quantity,
       product.minQuantity,
       product.targetQuantity,
+      product.shopUrl ?? null,
       userId,
       now.toISOString(),
     );
@@ -126,8 +129,8 @@ export function insertProduct(db: DatabaseSync, product: ProductRequest, userId:
   return created;
 }
 
-// Returns false when the product does not exist. Without a quantity, the
-// stored quantity is kept.
+// Returns false when the product does not exist. Without a quantity or a
+// shop link, the stored ones are kept.
 export function updateProduct(
   db: DatabaseSync,
   id: number,
@@ -138,7 +141,7 @@ export function updateProduct(
   const result = db
     .prepare(
       `UPDATE products SET name = ?, category_id = ?, unit = ?, quantity = coalesce(?, quantity), min_quantity = ?,
-         target_quantity = ?, updated_by = ?, updated_at = ?
+         target_quantity = ?, shop_url = CASE WHEN ? THEN ? ELSE shop_url END, updated_by = ?, updated_at = ?
        WHERE id = ?`,
     )
     .run(
@@ -148,6 +151,8 @@ export function updateProduct(
       product.quantity ?? null,
       product.minQuantity,
       product.targetQuantity,
+      product.shopUrl === undefined ? 0 : 1,
+      product.shopUrl ?? null,
       userId,
       now.toISOString(),
       id,

@@ -128,6 +128,7 @@ describe('products API', () => {
         quantity: 1.5,
         minQuantity: 1,
         targetQuantity: 4,
+        shopUrl: null,
         updatedByName: 'Léa',
         updatedAt: '',
       },
@@ -151,6 +152,9 @@ describe('products API', () => {
       { ...valid, minQuantity: 3, targetQuantity: 2 },
       { ...valid, targetQuantity: -2 },
       { ...valid, unit: 3 },
+      { ...valid, shopUrl: 'pates' },
+      { ...valid, shopUrl: 'javascript:alert(1)' },
+      { ...valid, shopUrl: 42 },
     ];
     for (const body of invalid) {
       assert.equal((await admin.request('POST', '/api/products', body)).status, 400, JSON.stringify(body));
@@ -192,6 +196,27 @@ describe('products API', () => {
     const updated = (response.body as { product: Product }).product;
     assert.equal(updated.name, 'Spaghetti');
     assert.equal(updated.quantity, 1);
+  });
+
+  it('saves, keeps and removes the link to the product on an online shop', async () => {
+    const created = await createProduct(admin, { shopUrl: ' https://www.lafourche.fr/products/pates ' });
+    assert.equal(created.shopUrl, 'https://www.lafourche.fr/products/pates');
+    const { shopUrl: _shopUrl, ...fields } = created;
+
+    // An edit without the link keeps it.
+    const kept = await member.request('PUT', `/api/products/${created.id}`, { ...fields, name: 'Spaghetti' });
+    assert.equal((kept.body as { product: Product }).product.shopUrl, 'https://www.lafourche.fr/products/pates');
+
+    const changed = await member.request('PUT', `/api/products/${created.id}`, {
+      ...fields,
+      shopUrl: 'https://www.lafourche.fr/products/spaghetti',
+    });
+    assert.equal((changed.body as { product: Product }).product.shopUrl, 'https://www.lafourche.fr/products/spaghetti');
+
+    for (const shopUrl of [null, '  ']) {
+      const removed = await member.request('PUT', `/api/products/${created.id}`, { ...fields, shopUrl });
+      assert.equal((removed.body as { product: Product }).product.shopUrl, null);
+    }
   });
 
   it('deletes a product', async () => {

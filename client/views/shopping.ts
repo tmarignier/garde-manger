@@ -10,7 +10,13 @@ import {
   uncheckProduct,
   validatePurchases,
 } from '../api.ts';
-import { PRODUCT_NAME_MAX_LENGTH, groupProducts, matchesStockFilter, parseQuantity } from '../../shared/products.ts';
+import {
+  PRODUCT_NAME_MAX_LENGTH,
+  groupProducts,
+  matchesStockFilter,
+  parseQuantity,
+  shopName,
+} from '../../shared/products.ts';
 import type { Category, ExtraItem, Purchase, ShoppingListItem, ShoppingListResponse } from '../../shared/types.ts';
 import { h, messageLine, whileSubmitting } from '../dom.ts';
 import { formatQuantity } from '../format.ts';
@@ -235,6 +241,7 @@ export function shoppingView(): HTMLElement {
         // Nothing left to buy when someone found some at home after it was checked.
         h('span', { class: 'item-quantity' }, quantityToBuy > 0 ? withUnit(quantityToBuy, product.unit) : ''),
       ),
+      product.shopUrl === null ? null : shopLink(product.shopUrl, product.name),
       checks.products.has(product.id) ? boughtQuantity(product.id, product.name, product.unit) : null,
     );
     checkbox.addEventListener('change', () => {
@@ -243,6 +250,23 @@ export function shoppingView(): HTMLElement {
       updateValidateButton();
     });
     return li;
+  }
+
+  // Opens the product's page on the online shop in a new tab, to add it to the
+  // cart there. Coming back to the list, a tap checks it as ordered.
+  function shopLink(shopUrl: string, name: string): HTMLAnchorElement {
+    const site = shopName(shopUrl);
+    return h(
+      'a',
+      {
+        class: 'shop-link',
+        href: shopUrl,
+        target: '_blank',
+        rel: 'noopener noreferrer',
+        'aria-label': `Ouvrir sur ${site} : ${name}`,
+      },
+      `Ouvrir sur ${site} ↗`,
+    );
   }
 
   // The quantity actually bought, the proposed one by default: the shop may

@@ -99,6 +99,10 @@ export const migrations: readonly string[] = [
 
   ALTER TABLE extra_items ADD COLUMN checked INTEGER NOT NULL DEFAULT 0 CHECK (checked IN (0, 1));
   `,
+  // The product's page on an online shop, to fill the cart from the shopping list.
+  `
+  ALTER TABLE products ADD COLUMN shop_url TEXT;
+  `,
 ];
 
 export function getSchemaVersion(db: DatabaseSync): number {
