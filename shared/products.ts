@@ -126,16 +126,24 @@ export function hasShopLink(product: Product): boolean {
 }
 
 // What the stock list is narrowed to: a category, the products below their
-// minimum ('low'), the products out of stock ('out') or the products without
-// an online order link yet ('nolink').
-export type StockFilter = CategoryFilter | 'low' | 'out' | 'nolink';
+// minimum ('low'), the products out of stock ('out'), the products the family
+// uses most ('frequent', whose ids are given) or the products without an online
+// order link yet ('nolink').
+export type StockFilter = CategoryFilter | 'low' | 'out' | 'frequent' | 'nolink';
 
-export function matchesStockFilter(product: Product, filter: StockFilter): boolean {
+export function matchesStockFilter(
+  product: Product,
+  filter: StockFilter,
+  frequentIds: ReadonlySet<number> = new Set(),
+): boolean {
   if (filter === 'low') {
     return isBelowMinimum(product);
   }
   if (filter === 'out') {
     return isOutOfStock(product);
+  }
+  if (filter === 'frequent') {
+    return frequentIds.has(product.id);
   }
   if (filter === 'nolink') {
     return !hasShopLink(product);

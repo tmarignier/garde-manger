@@ -4,6 +4,7 @@ import type { Server } from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import { migrate, migrations, openDatabase } from '../server/database.ts';
+import { listFrequentProductIds } from '../server/product-history.ts';
 import { createApp } from '../server/server.ts';
 import type { Category, Product, ProductEvent, ProductHistoryResponse, ProductRequest, User } from '../shared/types.ts';
 import { Device } from './helpers.ts';
@@ -190,6 +191,37 @@ describe('product history API', () => {
     assert.equal((await history(product.id)).events.length, 1);
     assert.equal((await admin.request('GET', '/api/products/999/history')).status, 404);
   });
+
+  it('lists the products adjusted at least twice, most adjusted first', async () => {
+    const pasta = await createProduct(admin);
+    const rice = await createProduct(admin, { name: 'Riz' });
+    const salt = await createProduct(admin, { name: 'Sel' });
+    const sugar = await createProduct(admin, { name: 'Sucre' });
+    for (const [product, times] of [[rice, 2], [pasta, 3], [salt, 1], [sugar, 2]] as const) {
+      for (let i = 0; i < times; i++) {
+        assert.equal((await member.request('POST', `/api/products/${product.id}/adjust`, { delta: 1 })).status, 200);
+      }
+    }
+    // A deleted product is no longer offered.
+    assert.equal((await admin.request('DELETE', `/api/products/${sugar.id}`)).status, 204);
+    // Edits and purchases do not count, only + and −.
+    assert.equal((await admin.request('PUT', `/api/products/${salt.id}`, { ...pasta, name: 'Sel fin' })).status, 200);
+
+    const response = await member.request('GET', '/api/products/frequent');
+    assert.equal(response.status, 200, JSON.stringify(response.body));
+    assert.deepEqual(response.body, { productIds: [pasta.id, rice.id] });
+  });
+
+  it('only counts the adjustments since the given date', async () => {
+    const pasta = await createProduct(admin);
+    for (let i = 0; i < 2; i++) {
+      assert.equal((await admin.request('POST', `/api/products/${pasta.id}/adjust`, { delta: 1 })).status, 200);
+    }
+    assert.deepEqual(listFrequentProductIds(db, new Date(Date.now() - 60_000)), [pasta.id]);
+    assert.deepEqual(listFrequentProductIds(db, new Date(Date.now() + 60_000)), []);
+    assert.deepEqual(listFrequentProductIds(db, new Date(0), { minAdjustments: 3 }), []);
+  });
+
 });
 
 describe('product history migration', () => {

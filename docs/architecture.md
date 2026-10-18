@@ -184,6 +184,7 @@ Les tables sont déclarées `STRICT` (SQLite vérifie le type de chaque valeur) 
 | `PUT` | `/api/products/:id` | Modifier un produit |
 | `DELETE` | `/api/products/:id` | Supprimer un produit |
 | `POST` | `/api/products/:id/adjust` | Ajuster la quantité (`{ "delta": -1 }`) |
+| `GET` | `/api/products/frequent` | Produits les plus utilisés : ajustés avec `+` ou `−` au moins deux fois dans les 30 derniers jours, les 15 premiers, du plus ajusté au moins ajusté : `{ "productIds": [3, 12] }` |
 | `GET` | `/api/products/:id/history` | Historique du produit, 50 événements à la fois, du plus récent au plus ancien (`?before=<id>` pour les suivants) : `{ "events": [...], "hasMore": true }`. Fonctionne aussi pour un produit supprimé |
 | `GET` | `/api/shopping-list` | Obtenir la liste de courses calculée |
 | `PUT` | `/api/shopping-list/checks/:productId` | Cocher un produit, ou changer sa quantité achetée (`{ "quantity": 6 }`) |

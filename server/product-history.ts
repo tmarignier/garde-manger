@@ -5,6 +5,12 @@ import type { ProductEvent, ProductEventKind, ProductHistoryResponse, User } fro
 
 export const HISTORY_PAGE_SIZE = 50;
 
+// What makes a product frequent: adjusted at least twice in the last 30 days.
+// The list keeps the 15 most adjusted.
+export const FREQUENT_DAYS = 30;
+const FREQUENT_MIN_ADJUSTMENTS = 2;
+const FREQUENT_LIMIT = 15;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -132,4 +138,32 @@ export function listProductEvents(
 
 export function hasProductEvents(db: DatabaseSync, productId: number): boolean {
   return db.prepare('SELECT 1 FROM product_events WHERE product_id = ?').get(productId) !== undefined;
+}
+
+// The products the family uses most: those adjusted with + or − at least
+// `minAdjustments` times since `since`, most adjusted first. Deleted products
+// are left out.
+export function listFrequentProductIds(
+  db: DatabaseSync,
+  since: Date,
+  options: { minAdjustments?: number; limit?: number } = {},
+): number[] {
+  const { minAdjustments = FREQUENT_MIN_ADJUSTMENTS, limit = FREQUENT_LIMIT } = options;
+  return db
+    .prepare(
+      `SELECT product_events.product_id
+       FROM product_events JOIN products ON products.id = product_events.product_id
+       WHERE product_events.kind = 'adjusted' AND product_events.created_at >= ?
+       GROUP BY product_events.product_id
+       HAVING count(*) >= ?
+       ORDER BY count(*) DESC, max(product_events.id) DESC
+       LIMIT ?`,
+    )
+    .all(since.toISOString(), minAdjustments, limit)
+    .map((row) => {
+      if (!isRecord(row) || typeof row['product_id'] !== 'number') {
+        throw new Error('Unexpected frequent product row');
+      }
+      return row['product_id'];
+    });
 }

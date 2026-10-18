@@ -5,6 +5,7 @@ import { h } from '../dom.ts';
 const ALL = 'all';
 const LOW = 'low';
 const OUT = 'out';
+const FREQUENT = 'frequent';
 const NO_LINK = 'nolink';
 const NONE = 'none';
 
@@ -12,9 +13,10 @@ type Chip = { key: string; label: string; count?: number };
 
 // A row of chips to narrow a product list: every product, the categories that
 // have products in the list, and « Sans catégorie » when some have none. With
-// statuses, it also offers the products to buy again, those out of stock and
-// those without an online order link, with their count. One tap picks a chip;
-// the row is hidden while there is nothing to choose between.
+// statuses, it also offers the products the family uses most, those to buy
+// again, those out of stock and those without an online order link, with
+// their count. One tap picks a chip; the row is hidden while there is nothing
+// to choose between.
 export function categoryFilter(
   onChange: () => void,
   options: { statuses?: boolean } = {},
@@ -23,14 +25,14 @@ export function categoryFilter(
   value: () => StockFilter;
   state: () => string;
   restore: (state: string) => void;
-  update: (categories: readonly Category[], products: readonly Product[]) => void;
+  update: (categories: readonly Category[], products: readonly Product[], frequentIds?: ReadonlySet<number>) => void;
 } {
   const element = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filtrer les produits' });
   element.hidden = true;
   let selected = ALL;
 
   function value(): StockFilter {
-    if (selected === LOW || selected === OUT || selected === NO_LINK) {
+    if (selected === LOW || selected === OUT || selected === FREQUENT || selected === NO_LINK) {
       return selected;
     }
     if (selected === NONE) {
@@ -61,10 +63,18 @@ export function categoryFilter(
   // Rebuilds the chips from the current list. The choice is kept while it
   // still exists, otherwise the filter goes back to every product. A status
   // chip stays while it is picked, even when its count drops to 0.
-  function update(categories: readonly Category[], products: readonly Product[]): void {
+  function update(
+    categories: readonly Category[],
+    products: readonly Product[],
+    frequentIds: ReadonlySet<number> = new Set(),
+  ): void {
     const used = new Set(products.map((product) => product.categoryId));
     const chips: Chip[] = [{ key: ALL, label: 'Tous' }];
     if (options.statuses === true) {
+      const frequent = products.filter((product) => frequentIds.has(product.id)).length;
+      if (frequent > 0 || selected === FREQUENT) {
+        chips.push({ key: FREQUENT, label: 'Fréquents', count: frequent });
+      }
       const low = products.filter(isBelowMinimum).length;
       const out = products.filter(isOutOfStock).length;
       if (low > 0 || selected === LOW) {
